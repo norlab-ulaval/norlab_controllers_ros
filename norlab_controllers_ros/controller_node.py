@@ -1,3 +1,6 @@
+# import norlabcontrollib
+import sys
+
 import numpy as np
 
 import rclpy
@@ -6,6 +9,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
+from norlab_controllers_msgs.msg import PathSequence, DirectionalPath
 
 class ControllerNode(Node):
 
@@ -20,6 +24,7 @@ class ControllerNode(Node):
         self.pose = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
         self.subscription
+        self.get_logger().info(sys.executable)
 
     def quaternion_to_euler(self, w, x, y, z):
         sinr_cosp = 2 * (w * x + y * z)

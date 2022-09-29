@@ -15,7 +15,7 @@ setup(
         # Include all launch files.
         (os.path.join('share', package_name), glob('launch/*launch.[pxy][yma]*')),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'norlab_controllers_msgs'],
     zip_safe=True,
     maintainer='Dominic Baril',
     maintainer_email='dominic.baril@norlab.ulaval.ca',
