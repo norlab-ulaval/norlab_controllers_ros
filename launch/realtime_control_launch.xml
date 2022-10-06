@@ -1,6 +1,6 @@
 <launch>
     <node pkg="norlab_controllers_ros" exec="controller_node" name="controller_node" output="screen">
         <remap from="odometry_in" to="icp_odom"/>
-        <param name="controller_config" value="$(find-pkg-share norlab_controllers_ros)/params/warthog-differential-orthexp.yaml"/>
+        <param name="controller_config" value="$(find-pkg-share norlab_controllers_ros)/warthog-differential-orthexp.yaml"/>
     </node>
 </launch>

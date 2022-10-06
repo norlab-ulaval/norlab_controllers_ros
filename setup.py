@@ -14,6 +14,8 @@ setup(
         ('share/' + package_name, ['package.xml']),
         # Include all launch files.
         (os.path.join('share', package_name), glob('launch/*launch.[pxy][yma]*')),
+        # Include all param files
+        (os.path.join('share', package_name), glob('params/*'))
     ],
     install_requires=['setuptools', 'norlab_controllers_msgs'],
     zip_safe=True,

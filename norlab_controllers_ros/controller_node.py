@@ -1,5 +1,5 @@
-# import norlabcontrollib
-import sys
+from norlabcontrollib.controllers.controller_factory import ControllerFactory
+from norlabcontrollib.path.path import Path
 
 import numpy as np
 
@@ -21,10 +21,17 @@ class ControllerNode(Node):
             'odom_in',
             self.odometry_callback,
             10)
+
         self.pose = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
-        self.subscription
-        self.get_logger().info(sys.executable)
+
+        self.declare_parameter('controller_config')
+        controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
+
+        controller_factory = ControllerFactory()
+        controller = controller_factory.load_parameters_from_yaml(controller_config_path)
+
+        self.get_logger().info(str(controller.path_look_ahead_distance))
 
     def quaternion_to_euler(self, w, x, y, z):
         sinr_cosp = 2 * (w * x + y * z)
