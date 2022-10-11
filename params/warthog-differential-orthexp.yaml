@@ -3,6 +3,7 @@ rate: 20
 minimum_linear_velocity: 0.1
 maximum_linear_velocity: 2.0
 maximum_angular_velocity: 1.0
+goal_tolerance: 0.2
 gain_path_convergence: 0.4
 gain_proportional_angular: 1.0
 gain_distance_to_goal_linear: 0.4
