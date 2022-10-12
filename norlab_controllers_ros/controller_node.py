@@ -1,3 +1,4 @@
+import std_msgs.msg
 from norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlabcontrollib.path.path import Path
 
@@ -20,6 +21,7 @@ class ControllerNode(Node):
     def __init__(self):
         super().__init__('controller_node')
         self.cmd_publisher_ = self.create_publisher(Twist, 'cmd_vel_out', 100)
+        self.cmd_vel_msg = Twist()
         self.odom_subscription = self.create_subscription(
             Odometry,
             'odom_in',
@@ -75,6 +77,14 @@ class ControllerNode(Node):
         self.velocity[4] = message.twist.twist.angular.y
         self.velocity[5] = message.twist.twist.angular.z
 
+    def command_array_to_twist_msg(self, command_array):
+        self.cmd_vel_msg.linear.x = command_array[0]
+        self.cmd_vel_msg.linear.y = 0.0
+        self.cmd_vel_msg.linear.z = 0.0
+        self.cmd_vel_msg.angular.x = 0.0
+        self.cmd_vel_msg.angular.y = 0.0
+        self.cmd_vel_msg.angular.z = command_array[1]
+
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
         self.get_logger().info("Importing goal paths...")
@@ -91,9 +101,9 @@ class ControllerNode(Node):
                                                                      current_path.poses[i].pose.orientation.x,
                                                                      current_path.poses[i].pose.orientation.y,
                                                                      current_path.poses[i].pose.orientation.z)
-                current_path_array[i, 3:] = current_orientation_euler
-                current_path_object = Path(current_path_array)
-                current_path_object.compute_metrics()
+            current_path_array[i, 3:] = current_orientation_euler
+            current_path_object = Path(current_path_array)
+            current_path_object.compute_metrics()
             self.goal_paths_list.append(current_path_object)
         number_of_goal_paths = len(self.goal_paths_list)
         self.get_logger().info("Path import done, proceeding to executing " + str(number_of_goal_paths) + " path(s)...")
@@ -103,13 +113,20 @@ class ControllerNode(Node):
             # load all goal paths in sequence
             self.get_logger().info("Executing path " + str(i+1) + " of " + str(number_of_goal_paths))
             self.controller.update_path(self.goal_paths_list[i])
+            print(self.controller.path.poses)
             # while loop to repeat a single goal path
             while self.controller.distance_to_goal >= self.controller.goal_tolerance:
-                self.controller.compute_command_vector(self.state)
+                command_vector = self.controller.compute_command_vector(self.state)
+                self.command_array_to_twist_msg(command_vector)
+                self.cmd_publisher_.publish(self.cmd_vel_msg)
 
         ## return completed path to action client
+        path_goal_handle.succeed()
         paths_result = FollowPath.Result()
-        paths_result.result_status = 1 # 1 for success
+        paths_result
+        result_status = std_msgs.msg.UInt32()
+        result_status.data = 1 # 1 for success
+        paths_result.result_status = result_status
         return paths_result
 
 def main(args=None):
