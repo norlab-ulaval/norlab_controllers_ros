@@ -14,8 +14,6 @@ from nav_msgs.msg import Odometry
 from norlab_controllers_msgs.msg import PathSequence, DirectionalPath
 from norlab_controllers_msgs.action import FollowPath
 
-#TODO: Get a wiln working setup to send action goals to this node to iterate more quickly
-
 class ControllerNode(Node):
 
     def __init__(self):
@@ -46,6 +44,8 @@ class ControllerNode(Node):
 
         self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
+
+        self.rate = self.create_rate(20)
     def quaternion_to_euler(self, w, x, y, z):
         sinr_cosp = 2 * (w * x + y * z)
         cosr_cosp = 1 - 2 * (x ** 2 + y ** 2)
@@ -113,17 +113,20 @@ class ControllerNode(Node):
             # load all goal paths in sequence
             self.get_logger().info("Executing path " + str(i+1) + " of " + str(number_of_goal_paths))
             self.controller.update_path(self.goal_paths_list[i])
-            print(self.controller.path.poses)
+            # print(self.controller.path.poses)
             # while loop to repeat a single goal path
             while self.controller.distance_to_goal >= self.controller.goal_tolerance:
+                print(self.state)
                 command_vector = self.controller.compute_command_vector(self.state)
                 self.command_array_to_twist_msg(command_vector)
                 self.cmd_publisher_.publish(self.cmd_vel_msg)
+                print("a")
+                self.rate.sleep()
+                print("b")
 
         ## return completed path to action client
         path_goal_handle.succeed()
         paths_result = FollowPath.Result()
-        paths_result
         result_status = std_msgs.msg.UInt32()
         result_status.data = 1 # 1 for success
         paths_result.result_status = result_status
