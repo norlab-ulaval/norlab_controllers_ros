@@ -3,6 +3,7 @@ from norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlabcontrollib.path.path import Path
 
 import numpy as np
+from threading import Lock
 
 import rclpy
 from rclpy.node import Node
@@ -46,6 +47,7 @@ class ControllerNode(Node):
 
         self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
+        self.state_velocity_mutex = Lock()
 
         self.rate = self.create_rate(self.controller.rate)
 
@@ -69,6 +71,7 @@ class ControllerNode(Node):
         return np.array([roll, pitch, yaw])
 
     def odometry_callback(self, message):
+        self.state_velocity_mutex.acquire()
         self.state[0] = message.pose.pose.position.x
         self.state[1] = message.pose.pose.position.y
         self.state[2] = message.pose.pose.position.z
@@ -82,6 +85,7 @@ class ControllerNode(Node):
         self.velocity[3] = message.twist.twist.angular.x
         self.velocity[4] = message.twist.twist.angular.y
         self.velocity[5] = message.twist.twist.angular.z
+        self.state_velocity_mutex.release()
 
     def command_array_to_twist_msg(self, command_array):
         self.cmd_vel_msg.linear.x = command_array[0]
@@ -92,9 +96,12 @@ class ControllerNode(Node):
         self.cmd_vel_msg.angular.z = command_array[1]
 
     def compute_then_publish_command(self):
+        self.state_velocity_mutex.acquire()
+        # self.get_logger().info(self.state)
         command_vector = self.controller.compute_command_vector(self.state)
         self.command_array_to_twist_msg(command_vector)
         self.cmd_publisher_.publish(self.cmd_vel_msg)
+        self.state_velocity_mutex.release()
 
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
@@ -128,7 +135,6 @@ class ControllerNode(Node):
             # print(self.controller.path.poses)
             # while loop to repeat a single goal path
             while self.controller.distance_to_goal >= self.controller.goal_tolerance:
-                self.get_logger().info(self.state)
                 self.compute_then_publish_command()
                 self.rate.sleep()
 
