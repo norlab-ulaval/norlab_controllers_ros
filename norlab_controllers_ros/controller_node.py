@@ -3,7 +3,7 @@ from norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlabcontrollib.path.path import Path
 
 import numpy as np
-from threading import Lock
+from multiprocessing import Lock
 
 import rclpy
 from rclpy.node import Node
@@ -71,21 +71,20 @@ class ControllerNode(Node):
         return np.array([roll, pitch, yaw])
 
     def odometry_callback(self, message):
-        self.state_velocity_mutex.acquire()
-        self.state[0] = message.pose.pose.position.x
-        self.state[1] = message.pose.pose.position.y
-        self.state[2] = message.pose.pose.position.z
-        self.state[3:] = self.quaternion_to_euler(message.pose.pose.orientation.w,
-                                                  message.pose.pose.orientation.x,
-                                                  message.pose.pose.orientation.y,
-                                                  message.pose.pose.orientation.z)
-        self.velocity[0] = message.twist.twist.linear.x
-        self.velocity[1] = message.twist.twist.linear.y
-        self.velocity[2] = message.twist.twist.linear.z
-        self.velocity[3] = message.twist.twist.angular.x
-        self.velocity[4] = message.twist.twist.angular.y
-        self.velocity[5] = message.twist.twist.angular.z
-        self.state_velocity_mutex.release()
+        with self.state_velocity_mutex:
+            self.state[0] = message.pose.pose.position.x
+            self.state[1] = message.pose.pose.position.y
+            self.state[2] = message.pose.pose.position.z
+            self.state[3:] = self.quaternion_to_euler(message.pose.pose.orientation.w,
+                                                      message.pose.pose.orientation.x,
+                                                      message.pose.pose.orientation.y,
+                                                      message.pose.pose.orientation.z)
+            self.velocity[0] = message.twist.twist.linear.x
+            self.velocity[1] = message.twist.twist.linear.y
+            self.velocity[2] = message.twist.twist.linear.z
+            self.velocity[3] = message.twist.twist.angular.x
+            self.velocity[4] = message.twist.twist.angular.y
+            self.velocity[5] = message.twist.twist.angular.z
 
     def command_array_to_twist_msg(self, command_array):
         self.cmd_vel_msg.linear.x = command_array[0]
@@ -96,12 +95,11 @@ class ControllerNode(Node):
         self.cmd_vel_msg.angular.z = command_array[1]
 
     def compute_then_publish_command(self):
-        self.state_velocity_mutex.acquire()
-        # self.get_logger().info(self.state)
-        command_vector = self.controller.compute_command_vector(self.state)
-        self.command_array_to_twist_msg(command_vector)
-        self.cmd_publisher_.publish(self.cmd_vel_msg)
-        self.state_velocity_mutex.release()
+        with self.state_velocity_mutex:
+            # self.get_logger().info(self.state)
+            command_vector = self.controller.compute_command_vector(self.state)
+            self.command_array_to_twist_msg(command_vector)
+            self.cmd_publisher_.publish(self.cmd_vel_msg)
 
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
