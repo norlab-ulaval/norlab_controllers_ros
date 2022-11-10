@@ -37,8 +37,8 @@ class ControllerNode(Node):
         )
 
         self.declare_parameter('controller_config')
-        # controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
-        controller_config_path = "/home/dominic/ros2_ws/install/norlab_controllers_ros/share/norlab_controllers_ros/warthog-differential-orthexp.yaml"
+        controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
+        #controller_config_path = "/home/robot/ros2_ws/install/norlab_controllers_ros/share/norlab_controllers_ros/warthog-differential-orthexp.yaml"
 
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
@@ -98,8 +98,15 @@ class ControllerNode(Node):
         with self.state_velocity_mutex:
             # self.get_logger().info(self.state)
             command_vector = self.controller.compute_command_vector(self.state)
+            self.get_logger().info("yaw_world_frame: " + str(self.state[5]))
             self.command_array_to_twist_msg(command_vector)
             self.cmd_publisher_.publish(self.cmd_vel_msg)
+            self.get_logger().info("proj_id: " + str(self.controller.orthogonal_projection_id))
+            self.get_logger().info("proj_dist: " + str(self.controller.orthogonal_projection_dist))
+            self.get_logger().info("targer_exp_ang: " + str(self.controller.target_exponential_tangent_angle))
+            self.get_logger().info("yaw_path_frame: " + str(self.controller.robot_yaw_path_frame))
+            self.get_logger().info("path_angle: " + str(self.controller.path.angles[self.controller.orthogonal_projection_id]))
+            self.get_logger().info("error_ang: " + str(self.controller.error_angle))
 
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
