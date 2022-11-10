@@ -139,6 +139,7 @@ class ControllerNode(Node):
             self.controller.update_path(self.goal_paths_list[i])
             # print(self.controller.path.poses)
             # while loop to repeat a single goal path
+            self.controller.distance_to_goal = 10000
             while self.controller.distance_to_goal >= self.controller.goal_tolerance:
                 self.get_logger().info("distance_to_goal: " + str(self.controller.distance_to_goal))
                 self.get_logger().info("goal tol : " + str(self.controller.goal_tolerance))
