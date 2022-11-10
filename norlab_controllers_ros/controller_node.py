@@ -98,15 +98,15 @@ class ControllerNode(Node):
         with self.state_velocity_mutex:
             # self.get_logger().info(self.state)
             command_vector = self.controller.compute_command_vector(self.state)
-            #self.get_logger().info("yaw_world_frame: " + str(self.state[5]))
+            self.get_logger().info("yaw_world_frame: " + str(self.state[5]))
             self.command_array_to_twist_msg(command_vector)
             self.cmd_publisher_.publish(self.cmd_vel_msg)
             #self.get_logger().info("proj_id: " + str(self.controller.orthogonal_projection_id))
             #self.get_logger().info("proj_dist: " + str(self.controller.orthogonal_projection_dist))
-            #self.get_logger().info("targer_exp_ang: " + str(self.controller.target_exponential_tangent_angle))
-            #self.get_logger().info("yaw_path_frame: " + str(self.controller.robot_yaw_path_frame))
-            #self.get_logger().info("path_angle: " + str(self.controller.path.angles[self.controller.orthogonal_projection_id]))
-            #self.get_logger().info("error_ang: " + str(self.controller.error_angle))
+            self.get_logger().info("targer_exp_ang: " + str(self.controller.target_exponential_tangent_angle))
+            self.get_logger().info("yaw_path_frame: " + str(self.controller.robot_yaw_path_frame))
+            self.get_logger().info("path_angle: " + str(self.controller.path.angles[self.controller.orthogonal_projection_id]))
+            self.get_logger().info("error_ang: " + str(self.controller.error_angle))
 
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
@@ -114,6 +114,7 @@ class ControllerNode(Node):
         goal_paths = path_goal_handle.request.path.paths
         self.path_goal_handle = path_goal_handle
         self.goal_paths_list = []
+        self.goal_paths_directions_list = []
         for current_path in goal_paths:
             current_path_length = len(current_path.poses)
             current_path_array = np.zeros((current_path_length, 6))
@@ -127,6 +128,7 @@ class ControllerNode(Node):
                                                                      current_path.poses[i].pose.orientation.z)
             current_path_array[i, 3:] = current_orientation_euler
             current_path_object = Path(current_path_array)
+            current_path_object.going_forward = current_path.forward
             current_path_object.compute_metrics()
             self.goal_paths_list.append(current_path_object)
         self.number_of_goal_paths = len(self.goal_paths_list)
@@ -144,6 +146,7 @@ class ControllerNode(Node):
                 self.get_logger().info("distance_to_goal: " + str(self.controller.distance_to_goal))
                 self.get_logger().info("goal tol : " + str(self.controller.goal_tolerance))
                 self.get_logger().info("goal gain : " + str(self.controller.gain_distance_to_goal_linear))
+                self.get_logger().info("going forward : " + str(self.controller.path.going_forward))
                 self.compute_then_publish_command()
                 self.rate.sleep()
 
