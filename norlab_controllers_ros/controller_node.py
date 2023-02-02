@@ -139,8 +139,7 @@ class ControllerNode(Node):
         self.cmd_vel_msg = Twist()
         self.cmd_publisher_.publish(self.cmd_vel_msg)
 
-
-            self.get_logger().info("SUCCESS")
+        self.get_logger().info("SUCCESS")
 
         ## return completed path to action client
         path_goal_handle.succeed()
