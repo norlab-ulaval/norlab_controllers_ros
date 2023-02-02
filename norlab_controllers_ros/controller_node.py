@@ -38,7 +38,6 @@ class ControllerNode(Node):
 
         self.declare_parameter('controller_config')
         controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
-        #controller_config_path = "/home/robot/ros2_ws/install/norlab_controllers_ros/share/norlab_controllers_ros/warthog-differential-orthexp.yaml"
 
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
@@ -52,6 +51,7 @@ class ControllerNode(Node):
         self.waiting_for_path = True
         self.loading_path = False
         self.executing_path = False
+
     def quaternion_to_euler(self, w, x, y, z):
         sinr_cosp = 2 * (w * x + y * z)
         cosr_cosp = 1 - 2 * (x ** 2 + y ** 2)
@@ -139,6 +139,8 @@ class ControllerNode(Node):
         self.cmd_vel_msg = Twist()
         self.cmd_publisher_.publish(self.cmd_vel_msg)
 
+
+            self.get_logger().info("SUCCESS")
 
         ## return completed path to action client
         path_goal_handle.succeed()
