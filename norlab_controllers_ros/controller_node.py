@@ -43,8 +43,6 @@ class ControllerNode(Node):
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
 
-        self.get_logger().info(str(self.controller.path_look_ahead_distance))
-
         self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
         self.state_velocity_mutex = Lock()
@@ -96,17 +94,9 @@ class ControllerNode(Node):
 
     def compute_then_publish_command(self):
         with self.state_velocity_mutex:
-            # self.get_logger().info(self.state)
             command_vector = self.controller.compute_command_vector(self.state)
-            self.get_logger().info("yaw_world_frame: " + str(self.state[5]))
             self.command_array_to_twist_msg(command_vector)
             self.cmd_publisher_.publish(self.cmd_vel_msg)
-            #self.get_logger().info("proj_id: " + str(self.controller.orthogonal_projection_id))
-            #self.get_logger().info("proj_dist: " + str(self.controller.orthogonal_projection_dist))
-            self.get_logger().info("targer_exp_ang: " + str(self.controller.target_exponential_tangent_angle))
-            self.get_logger().info("yaw_path_frame: " + str(self.controller.robot_yaw_path_frame))
-            self.get_logger().info("path_angle: " + str(self.controller.path.angles[self.controller.orthogonal_projection_id]))
-            self.get_logger().info("error_ang: " + str(self.controller.error_angle))
 
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
@@ -143,10 +133,6 @@ class ControllerNode(Node):
             # while loop to repeat a single goal path
             self.controller.distance_to_goal = 10000
             while self.controller.distance_to_goal >= self.controller.goal_tolerance:
-                self.get_logger().info("distance_to_goal: " + str(self.controller.distance_to_goal))
-                self.get_logger().info("goal tol : " + str(self.controller.goal_tolerance))
-                self.get_logger().info("goal gain : " + str(self.controller.gain_distance_to_goal_linear))
-                self.get_logger().info("going forward : " + str(self.controller.path.going_forward))
                 self.compute_then_publish_command()
                 self.rate.sleep()
 
