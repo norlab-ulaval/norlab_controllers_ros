@@ -132,12 +132,15 @@ class ControllerNode(Node):
             # print(self.controller.path.poses)
             # while loop to repeat a single goal path
             self.last_distance_to_goal = 1000
+            self.controller.orthogonal_projection_id = 0
+            self.controller.orthogonal_projection_dist = 0
             while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance :
                 self.compute_then_publish_command()
                 # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
                 # self.get_logger().info('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
                 # self.get_logger().info('Distance_to_goal : ' + str(self.controller.distance_to_goal))
                 # self.get_logger().info('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
+                self.get_logger().info('orthogonal proj id : ' + str(self.controller.orthogonal_projection_id))
                 if self.controller.orthogonal_projection_id >= self.controller.path.n_poses-1:
                     if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
                         break

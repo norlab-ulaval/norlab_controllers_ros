@@ -1,7 +1,7 @@
 controller_name: 'DifferentialOrthogonalExponential'
 rate: 20
 minimum_linear_velocity: 0.1
-maximum_linear_velocity: 1.0
+maximum_linear_velocity: 0.3
 maximum_angular_velocity: 1.0
 goal_tolerance: 0.1
 gain_path_convergence: 0.8
@@ -12,5 +12,6 @@ gain_distance_to_goal_linear: 0.5
 gain_path_curvature_linear: 0.005
 path_look_ahead_distance: 1.0
 query_radius: 50
+query_knn: 10
 id_window_size: 5
 
