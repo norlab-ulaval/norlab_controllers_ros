@@ -119,7 +119,7 @@ class ControllerNode(Node):
             current_path_array[i, 3:] = current_orientation_euler
             current_path_object = Path(current_path_array)
             current_path_object.going_forward = current_path.forward
-            current_path_object.compute_metrics()
+            current_path_object.compute_metrics(self.controller.path_look_ahead_distance)
             self.goal_paths_list.append(current_path_object)
         self.number_of_goal_paths = len(self.goal_paths_list)
         self.get_logger().info("Path import done, proceeding to executing " + str(self.number_of_goal_paths) + " path(s)...")
@@ -131,9 +131,18 @@ class ControllerNode(Node):
             self.controller.update_path(self.goal_paths_list[i])
             # print(self.controller.path.poses)
             # while loop to repeat a single goal path
-            self.controller.distance_to_goal = 10000
-            while self.controller.distance_to_goal >= self.controller.goal_tolerance:
+            self.last_distance_to_goal = 1000
+            while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance :
                 self.compute_then_publish_command()
+                # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
+                # self.get_logger().info('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
+                # self.get_logger().info('Distance_to_goal : ' + str(self.controller.distance_to_goal))
+                # self.get_logger().info('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
+                if self.controller.orthogonal_projection_id >= self.controller.path.n_poses-1:
+                    if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
+                        break
+                    else:
+                        self.last_distance_to_goal = self.controller.euclidean_distance_to_goal
                 self.rate.sleep()
 
         self.cmd_vel_msg = Twist()
