@@ -17,6 +17,7 @@ from nav_msgs.msg import Odometry
 from norlab_controllers_msgs.msg import PathSequence, DirectionalPath
 from norlab_controllers_msgs.action import FollowPath
 
+
 class ControllerNode(Node):
 
     def __init__(self):
@@ -42,8 +43,8 @@ class ControllerNode(Node):
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
 
-        self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
-        self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
+        self.state = np.zeros(6)  # [x, y, z, roll, pitch, yaw]
+        self.velocity = np.zeros(6)  # [vx, vy, vz, v_roll, v_pitch, v_yaw]
         self.state_velocity_mutex = Lock()
 
         self.rate = self.create_rate(self.controller.rate)
@@ -132,13 +133,13 @@ class ControllerNode(Node):
             # print(self.controller.path.poses)
             # while loop to repeat a single goal path
             self.last_distance_to_goal = 1000
-            while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance :
+            while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
                 # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
                 # self.get_logger().info('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
                 # self.get_logger().info('Distance_to_goal : ' + str(self.controller.distance_to_goal))
                 # self.get_logger().info('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
-                if self.controller.orthogonal_projection_id >= self.controller.path.n_poses-1:
+                if self.controller.orthogonal_projection_id >= self.controller.path.n_poses - 1:
                     if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
                         break
                     else:
@@ -174,11 +175,12 @@ class ControllerNode(Node):
                     return paths_result
                     self.executing_path = False
                     return None
-                self.get_logger().info("Executing path " + str(self.path_id+1) + " of " + str(self.number_of_goal_paths))
+                self.get_logger().info("Executing path " + str(self.path_id + 1) + " of " + str(self.number_of_goal_paths))
                 self.controller.update_path(self.goal_paths_list[self.path_id])
 
             else:
                 return None
+
 
 def main(args=None):
     # initialize the ROS communication
@@ -199,6 +201,7 @@ def main(args=None):
     finally:
         # shutdown the ROS communication
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
