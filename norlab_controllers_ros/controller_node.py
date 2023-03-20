@@ -39,9 +39,12 @@ class ControllerNode(Node):
 
         self.declare_parameter('controller_config')
         controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
+        self.declare_parameter('rotation_controller_config')
+        rotation_controller_config_path = self.get_parameter('rotation_controller_config').get_parameter_value().string_value
 
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
+        self.rotation_controller = self.controller_factory.load_parameters_from_yaml(rotation_controller_config_path)
 
         self.state = np.zeros(6)  # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6)  # [vx, vy, vz, v_roll, v_pitch, v_yaw]
@@ -99,6 +102,12 @@ class ControllerNode(Node):
             self.command_array_to_twist_msg(command_vector)
             self.cmd_publisher_.publish(self.cmd_vel_msg)
 
+    def compute_then_publish_rotation_command(self):
+        with self.state_velocity_mutex:
+            command_vector = self.rotation_controller.compute_command_vector(self.state)
+            self.command_array_to_twist_msg(command_vector)
+            self.cmd_publisher_.publish(self.cmd_vel_msg)
+
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
         self.get_logger().info("Importing goal paths...")
@@ -130,15 +139,15 @@ class ControllerNode(Node):
             # load all goal paths in sequence
             self.get_logger().info("Executing path " + str(i + 1) + " of " + str(self.number_of_goal_paths))
             self.controller.update_path(self.goal_paths_list[i])
-            # print(self.controller.path.poses)
+            self.rotation_controller.update_path(self.goal_paths_list[i])
             # while loop to repeat a single goal path
+            if i > 0:
+                while self.rotation_controller.angular_distance_to_goal >= self.rotation_controller.goal_tolerance:
+                    self.compute_then_publish_rotation_command()
+                    self.rate.sleep()
             self.last_distance_to_goal = 1000
             while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
-                # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
-                # self.get_logger().info('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
-                # self.get_logger().info('Distance_to_goal : ' + str(self.controller.distance_to_goal))
-                # self.get_logger().info('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
                 if self.controller.orthogonal_projection_id >= self.controller.path.n_poses - 1:
                     if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
                         break
