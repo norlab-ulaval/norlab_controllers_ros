@@ -1,20 +1,14 @@
 import std_msgs.msg
 from norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlabcontrollib.path.path import Path
-
 import numpy as np
 from multiprocessing import Lock
-
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
-
+from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-
-from norlab_controllers_msgs.msg import PathSequence, DirectionalPath
 from norlab_controllers_msgs.action import FollowPath
 
 
