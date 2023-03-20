@@ -122,11 +122,10 @@ class ControllerNode(Node):
                 current_path_array[i, 0] = current_path.poses[i].pose.position.x
                 current_path_array[i, 1] = current_path.poses[i].pose.position.y
                 current_path_array[i, 2] = current_path.poses[i].pose.position.z
-                current_orientation_euler = self.quaternion_to_euler(current_path.poses[i].pose.orientation.w,
+                current_path_array[i, 3:] = self.quaternion_to_euler(current_path.poses[i].pose.orientation.w,
                                                                      current_path.poses[i].pose.orientation.x,
                                                                      current_path.poses[i].pose.orientation.y,
                                                                      current_path.poses[i].pose.orientation.z)
-            current_path_array[i, 3:] = current_orientation_euler
             current_path_object = Path(current_path_array)
             current_path_object.going_forward = current_path.forward
             current_path_object.compute_metrics(self.controller.path_look_ahead_distance)
