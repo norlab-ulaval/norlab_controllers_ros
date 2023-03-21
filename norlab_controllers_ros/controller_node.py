@@ -115,12 +115,35 @@ class ControllerNode(Node):
 
     def publish_optimal_path(self):
         self.optim_path_msg.header.stamp = self.get_clock().now().to_msg()
+        self.optim_path_msg = Ros2Path()
+        self.optim_path_msg.header.frame_id = "map"
         for k in range(0, self.controller.horizon_length):
-            # self.get_logger().info('optim_traj_x_' + str(k) + ' ' + str(self.controller.optim_trajectory_array[0, k]))
-            # self.get_logger().info('optim_traj_y_' + str(k) + ' ' + str(self.controller.optim_trajectory_array[1, k]))
-            self.optim_path_msg.poses[k].header.stamp = self.get_clock().now().to_msg()
-            self.optim_path_msg.poses[k].pose.position.x = self.controller.optim_trajectory_array[0, k]
-            self.optim_path_msg.poses[k].pose.position.y = self.controller.optim_trajectory_array[1, k]
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            pose.pose.position.x = self.controller.optim_trajectory_array[0, k]
+            pose.pose.position.y = self.controller.optim_trajectory_array[1, k]
+            pose.pose.position.z = 0.0
+            pose.pose.orientation.x = 0.0
+            pose.pose.orientation.y = 0.0
+            pose.pose.orientation.z = 0.0
+            pose.pose.orientation.w = 1.0
+            self.optim_path_msg.poses.append(pose)
+
+        #     # self.get_logger().info('optim_traj_x_' + str(k) + ' ' + str(self.controller.optim_trajectory_array[0, k]))
+        #     # self.get_logger().info('optim_traj_y_' + str(k) + ' ' + str(self.controller.optim_trajectory_array[1, k]))
+        #     self.optim_path_msg.poses[k].header.stamp = self.get_clock().now().to_msg()
+        #     self.optim_path_msg.poses[k].pose.position.x = self.controller.optim_trajectory_array[0, k]
+        #     self.optim_path_msg.poses[k].pose.position.y = self.controller.optim_trajectory_array[1, k]
+        #     if k == 0:
+        #         self.get_logger().info(
+        #             'optim_traj_x_' + str(k) + ' ' + str(self.controller.optim_trajectory_array[0, k]))
+        #         self.get_logger().info(
+        #             'optim_traj_x_msg_' + str(k) + ' ' + str(self.optim_path_msg.poses[k].pose.position.x))
+        # self.get_logger().info(
+        #     'optim_traj_x_end_' + ' ' + str(self.controller.optim_trajectory_array[0, 0]))
+        # self.get_logger().info(
+        #     'optim_traj_x_msg_end_' + ' ' + str(self.optim_path_msg.poses[0].pose.position.x))
+
         self.path_publisher_.publish(self.optim_path_msg)
 
     def follow_path_callback(self, path_goal_handle):
@@ -158,17 +181,21 @@ class ControllerNode(Node):
             # print(self.controller.path.poses)
             # while loop to repeat a single goal path
             self.last_distance_to_goal = 1000
+            self.controller.compute_distance_to_goal(self.state, 0)
+            self.controller.last_path_pose_id = 0
+            # self.get_logger().info('reftraj_x0' + str(self.controller.path.poses[0,0]))
+            # self.get_logger().info('reftraj_y0' + str(self.controller.path.poses[0,1]))
             while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
                 self.publish_optimal_path()
                 # self.get_logger().info('optimal left : ' + str(self.controller.optimal_left))
                 # self.get_logger().info('optimal right : ' + str(self.controller.optimal_right))
-                # self.get_logger().info('controller_x : ' + str(self.controller.planar_state[0]))
-                # self.get_logger().info('controller_y : ' + str(self.controller.planar_state[1]))
-                # self.get_logger().info('controller_yaw : ' + str(self.controller.planar_state[2]))
-                # for j in range(0, self.controller.horizon_length):
-                    # self.get_logger().info('target_traj_x_' + str(j) + ' ' + str(self.controller.target_trajectory[0, j]))
-                    # self.get_logger().info('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
+                self.get_logger().info('controller_x : ' + str(self.controller.planar_state[0]))
+                self.get_logger().info('controller_y : ' + str(self.controller.planar_state[1]))
+                self.get_logger().info('controller_yaw : ' + str(self.controller.planar_state[2]))
+                for j in range(0, self.controller.horizon_length):
+                    self.get_logger().info('target_traj_x_' + str(j) + ' ' + str(self.controller.target_trajectory[0, j]))
+                    self.get_logger().info('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
                     # self.get_logger().info('optimal_left_' + str(j) + ' ' + str(self.controller.optim_solution_array[j]))
                     # self.get_logger().info('optimal_right_' + str(j) + ' ' + str(self.controller.optim_solution_array[j + self.controller.horizon_length]))
                 # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
@@ -181,6 +208,7 @@ class ControllerNode(Node):
                     else:
                         self.last_distance_to_goal = self.controller.euclidean_distance_to_goal
                 self.rate.sleep()
+            # self.controller.last_path_pose_id = 0
 
         self.cmd_vel_msg = Twist()
         self.cmd_publisher_.publish(self.cmd_vel_msg)
