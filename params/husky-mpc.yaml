@@ -15,7 +15,7 @@ id_window_size: 5
 horizon_length: 30
 state_cost_translational: 1
 state_cost_rotational: 0.0
-input_cost_wheel: 0.1
+input_cost_wheel: 0.01
 angular_velocity_gain: 2
 #input_cost_angular: 1
 ancillary_gain_linear: 1
