@@ -113,6 +113,8 @@ class ControllerNode(Node):
             current_path_length = len(current_path.poses)
             current_path_array = np.zeros((current_path_length, 6))
             for i in range(0, current_path_length):
+                self.get_logger().info(str(i) + " quaternion w: " + str(current_path.poses[i].pose.orientation.w))
+                self.get_logger().info(str(i) + " quaternion z: " + str(current_path.poses[i].pose.orientation.z))
                 current_path_array[i, 0] = current_path.poses[i].pose.position.x
                 current_path_array[i, 1] = current_path.poses[i].pose.position.y
                 current_path_array[i, 2] = current_path.poses[i].pose.position.z
@@ -135,10 +137,14 @@ class ControllerNode(Node):
             self.rotation_controller.update_path(self.goal_paths_list[i])
             # while loop to repeat a single goal path
             if i > 0:
+                self.get_logger().info("rotation controller")
                 while self.rotation_controller.angular_distance_to_goal >= self.rotation_controller.goal_tolerance:
                     self.compute_then_publish_rotation_command()
+                    self.get_logger().info("self.controller.current_angle: " + str(self.rotation_controller.current_angle))
+                    self.get_logger().info("self.controller.goal_angle: " + str(self.rotation_controller.goal_angle))
                     self.rate.sleep()
             self.last_distance_to_goal = 1000
+            self.get_logger().info("linear controller")
             while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
                 if self.controller.orthogonal_projection_id >= self.controller.path.n_poses - 1:
