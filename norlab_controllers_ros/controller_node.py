@@ -6,9 +6,14 @@ from multiprocessing import Lock
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from rclpy.executors import MultiThreadedExecutor
-from geometry_msgs.msg import Twist
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+
+from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry
+from nav_msgs.msg import Path as Ros2Path
+
+from norlab_controllers_msgs.msg import PathSequence, DirectionalPath
 from norlab_controllers_msgs.action import FollowPath
 
 
@@ -16,8 +21,31 @@ class ControllerNode(Node):
 
     def __init__(self):
         super().__init__('controller_node')
+        self.declare_parameter('controller_config')
+        controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
+        self.declare_parameter('rotation_controller_config')
+        rotation_controller_config_path = self.get_parameter('rotation_controller_config').get_parameter_value().string_value
+
+        self.controller_factory = ControllerFactory()
+        self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
+        self.rotation_controller = self.controller_factory.load_parameters_from_yaml(rotation_controller_config_path)
+
+        self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
+        self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
+        self.state_velocity_mutex = Lock()
+
         self.cmd_publisher_ = self.create_publisher(Twist, 'cmd_vel_out', 100)
         self.cmd_vel_msg = Twist()
+        self.optim_path_publisher_ = self.create_publisher(Ros2Path, 'optimal_path', 100)
+        self.optim_path_msg = Ros2Path()
+        self.optim_path_msg.header.frame_id = "map"
+        self.target_path_publisher_ = self.create_publisher(Ros2Path, 'target_path', 100)
+        self.target_path_msg = Ros2Path()
+        self.target_path_msg.header.frame_id = "map"
+        self.ref_path_publisher_ = self.create_publisher(Ros2Path, 'ref_path', 100)
+        self.ref_path_msg = Ros2Path()
+        self.ref_path_msg.header.frame_id = "map"
+
         self.odom_subscription = self.create_subscription(
             Odometry,
             'odom_in',
@@ -30,19 +58,6 @@ class ControllerNode(Node):
             'follow_path',
             self.follow_path_callback
         )
-
-        self.declare_parameter('controller_config')
-        controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
-        self.declare_parameter('rotation_controller_config')
-        rotation_controller_config_path = self.get_parameter('rotation_controller_config').get_parameter_value().string_value
-
-        self.controller_factory = ControllerFactory()
-        self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
-        self.rotation_controller = self.controller_factory.load_parameters_from_yaml(rotation_controller_config_path)
-
-        self.state = np.zeros(6)  # [x, y, z, roll, pitch, yaw]
-        self.velocity = np.zeros(6)  # [vx, vy, vz, v_roll, v_pitch, v_yaw]
-        self.state_velocity_mutex = Lock()
 
         self.rate = self.create_rate(self.controller.rate)
 
@@ -102,6 +117,58 @@ class ControllerNode(Node):
             self.command_array_to_twist_msg(command_vector)
             self.cmd_publisher_.publish(self.cmd_vel_msg)
 
+    def publish_optimal_path(self):
+        self.optim_path_msg.header.stamp = self.get_clock().now().to_msg()
+        self.optim_path_msg = Ros2Path()
+        self.optim_path_msg.header.frame_id = "map"
+        for k in range(0, self.controller.horizon_length):
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            pose.pose.position.x = self.controller.optim_trajectory_array[0, k]
+            pose.pose.position.y = self.controller.optim_trajectory_array[1, k]
+            pose.pose.position.z = 0.0
+            pose.pose.orientation.x = 0.0
+            pose.pose.orientation.y = 0.0
+            pose.pose.orientation.z = 0.0
+            pose.pose.orientation.w = 1.0
+            self.optim_path_msg.poses.append(pose)
+        self.optim_path_publisher_.publish(self.optim_path_msg)
+
+    def publish_target_path(self):
+        self.target_path_msg.header.stamp = self.get_clock().now().to_msg()
+        self.target_path_msg = Ros2Path()
+        self.target_path_msg.header.frame_id = "map"
+        for k in range(0, self.controller.horizon_length):
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            pose.pose.position.x = self.controller.target_trajectory[0, k]
+            pose.pose.position.y = self.controller.target_trajectory[1, k]
+            pose.pose.position.z = 0.0
+            pose.pose.orientation.x = 0.0
+            pose.pose.orientation.y = 0.0
+            pose.pose.orientation.z = 0.0
+            pose.pose.orientation.w = 1.0
+            self.target_path_msg.poses.append(pose)
+        self.target_path_publisher_.publish(self.target_path_msg)
+
+    def publish_reference_path(self):
+        self.ref_path_msg.header.stamp = self.get_clock().now().to_msg()
+        self.ref_path_msg = Ros2Path()
+        self.ref_path_msg.header.frame_id = "map"
+        for k in range(0, self.controller.path.n_poses):
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            pose.pose.position.x = self.controller.path.poses[k, 0]
+            pose.pose.position.y = self.controller.path.poses[k, 1]
+            pose.pose.position.z = 0.0
+            pose.pose.orientation.x = 0.0
+            pose.pose.orientation.y = 0.0
+            pose.pose.orientation.z = 0.0
+            pose.pose.orientation.w = 1.0
+            self.ref_path_msg.poses.append(pose)
+        self.ref_path_publisher_.publish(self.ref_path_msg)
+
+
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
         self.get_logger().info("Importing goal paths...")
@@ -133,20 +200,46 @@ class ControllerNode(Node):
             self.get_logger().info("Executing path " + str(i + 1) + " of " + str(self.number_of_goal_paths))
             self.controller.update_path(self.goal_paths_list[i])
             self.rotation_controller.update_path(self.goal_paths_list[i])
+            self.publish_reference_path()
+            self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
             # while loop to repeat a single goal path
             if i > 0:
                 while self.rotation_controller.angular_distance_to_goal >= self.rotation_controller.goal_tolerance:
                     self.compute_then_publish_rotation_command()
                     self.rate.sleep()
             self.last_distance_to_goal = 1000
+            self.controller.compute_distance_to_goal(self.state, 0)
+            self.controller.last_path_pose_id = 0
+            # self.get_logger().info('reftraj_x0' + str(self.controller.path.poses[0,0]))
+            # self.get_logger().info('reftraj_y0' + str(self.controller.path.poses[0,1]))
+            for j in range(0, self.controller.path.n_poses):
+                self.get_logger().info('ref_traj_x_' + str(j) + ' ' + str(self.controller.path.poses[j, 0]))
+                self.get_logger().info('ref_traj_y_' + str(j) + ' ' + str(self.controller.path.poses[j, 1]))
             while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
-                if self.controller.orthogonal_projection_id >= self.controller.path.n_poses - 1:
+                self.publish_optimal_path()
+                self.publish_target_path()
+                # self.get_logger().info('optimal left : ' + str(self.controller.optimal_left))
+                # self.get_logger().info('optimal right : ' + str(self.controller.optimal_right))
+                # self.get_logger().info('controller_x : ' + str(self.controller.planar_state[0]))
+                # self.get_logger().info('controller_y : ' + str(self.controller.planar_state[1]))
+                # self.get_logger().info('controller_yaw : ' + str(self.controller.planar_state[2]))
+                # for j in range(0, self.controller.horizon_length):
+                #     self.get_logger().info('target_traj_x_' + str(j) + ' ' + str(self.controller.target_trajectory[0, j]))
+                #     self.get_logger().info('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
+                    # self.get_logger().info('optimal_left_' + str(j) + ' ' + str(self.controller.optim_solution_array[j]))
+                    # self.get_logger().info('optimal_right_' + str(j) + ' ' + str(self.controller.optim_solution_array[j + self.controller.horizon_length]))
+                # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
+                # self.get_logger().info('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
+                # self.get_logger().info('Distance_to_goal : ' + str(self.controller.distance_to_goal))
+                # self.get_logger().info('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
+                if self.controller.orthogonal_projection_id >= self.controller.path.n_poses-1:
                     if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
                         break
                     else:
                         self.last_distance_to_goal = self.controller.euclidean_distance_to_goal
                 self.rate.sleep()
+            # self.controller.last_path_pose_id = 0
 
         self.cmd_vel_msg = Twist()
         self.cmd_publisher_.publish(self.cmd_vel_msg)
