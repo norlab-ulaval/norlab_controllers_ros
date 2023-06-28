@@ -214,6 +214,7 @@ class ControllerNode(Node):
             self.last_distance_to_goal = 1000
             self.controller.compute_distance_to_goal(self.state, 0)
             self.controller.last_path_pose_id = 0
+            # DEBUG
             # self.get_logger().info('reftraj_x0' + str(self.controller.path.poses[0,0]))
             # self.get_logger().info('reftraj_y0' + str(self.controller.path.poses[0,1]))
             for j in range(0, self.controller.path.n_poses):
@@ -223,6 +224,7 @@ class ControllerNode(Node):
                 self.compute_then_publish_command()
                 self.publish_optimal_path()
                 self.publish_target_path()
+                # DEBUG
                 # self.get_logger().info('optimal left : ' + str(self.controller.optimal_left))
                 # self.get_logger().info('optimal right : ' + str(self.controller.optimal_right))
                 # self.get_logger().info('controller_x : ' + str(self.controller.planar_state[0]))
@@ -243,7 +245,6 @@ class ControllerNode(Node):
                     else:
                         self.last_distance_to_goal = self.controller.euclidean_distance_to_goal
                 self.rate.sleep()
-            # self.controller.last_path_pose_id = 0
 
         self.cmd_vel_msg = Twist()
         self.cmd_publisher_.publish(self.cmd_vel_msg)
