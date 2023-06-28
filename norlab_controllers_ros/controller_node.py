@@ -28,7 +28,11 @@ class ControllerNode(Node):
 
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
-        self.rotation_controller = self.controller_factory.load_parameters_from_yaml(rotation_controller_config_path)
+        if rotation_controller_config_path == 'None':
+            self.rotation_controller_bool = False
+        else:
+            self.rotation_controller = self.controller_factory.load_parameters_from_yaml(rotation_controller_config_path)
+            self.rotation_controller_bool = True
 
         self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
@@ -203,7 +207,7 @@ class ControllerNode(Node):
             self.publish_reference_path()
             self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
             # while loop to repeat a single goal path
-            if i > 0:
+            if i > 0 and self.rotation_controller_bool:
                 while self.rotation_controller.angular_distance_to_goal >= self.rotation_controller.goal_tolerance:
                     self.compute_then_publish_rotation_command()
                     self.rate.sleep()
