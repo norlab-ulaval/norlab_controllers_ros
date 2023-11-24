@@ -1,9 +1,9 @@
 controller_name: 'StochasticLinearMPC'
 rate: 20
 minimum_linear_velocity: 0.1
-maximum_linear_velocity: 4.0
-maximum_angular_velocity: 1.0
-goal_tolerance: 0.3
+maximum_linear_velocity: 2.0
+maximum_angular_velocity: 0.5
+goal_tolerance: 0.5
 #gain_distance_to_goal_linear: 0.8
 gain_distance_to_goal_linear: 0.5
 #gain_path_curvature_linear: 0.0
@@ -15,8 +15,8 @@ id_window_size: 5
 horizon_length: 30
 state_cost_translational: 1
 state_cost_rotational: 0.0
-input_cost_wheel: 0.005
-angular_velocity_gain: 1.8
+input_cost_wheel: 0.02
+angular_velocity_gain: 0.3
 #input_cost_angular: 1
 ancillary_gain_linear: 1
 ancillary_gain_angular: 1
@@ -24,8 +24,8 @@ constraint_tolerance: 1e-8
 trained_model_path: '../norlabcontrollib/models/trained_params/husky/grand_salon/slip_blr/'
 prob_safety_level: 0.955
 initial_state_stdev: 0.005
-wheel_radius: 0.165
-baseline: 0.55
+wheel_radius: 0.285
+baseline: 1.20
 a_param_init: 0
 b_param_init: 0
 param_variance_init: 999999999999999999999
