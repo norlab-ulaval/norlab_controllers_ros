@@ -1,19 +1,21 @@
+#!/usr/bin/env python3
+
+import os
 import std_msgs.msg
-from norlabcontrollib.controllers.controller_factory import ControllerFactory
-from norlabcontrollib.path.path import Path
 import numpy as np
-from multiprocessing import Lock
+
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
-from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor
+from multiprocessing import Lock
 
 from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path as Ros2Path
 
-from norlab_controllers_msgs.msg import PathSequence, DirectionalPath
+from norlabcontrollib.path.path import Path
+from norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlab_controllers_msgs.action import FollowPath
 
 
@@ -21,6 +23,13 @@ class ControllerNode(Node):
 
     def __init__(self):
         super().__init__('controller_node')
+
+        # TODO: Check if these lines are necessary
+        abspath = os.path.abspath(__file__)
+        dname = os.path.dirname(abspath)
+        os.chdir(dname)
+        self.get_logger().info(os.getcwd())
+
         self.declare_parameter('controller_config')
         controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
         self.declare_parameter('rotation_controller_config')
