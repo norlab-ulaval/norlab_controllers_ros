@@ -4,6 +4,6 @@
         <remap from="cmd_vel_out" to="nav_vel"/>
         <!-- <param name="controller_config" value="$(find-pkg-share norlab_controllers_wrapper)/husky-pwrtrn-ideal-diff-drive-mpc.yaml"/> -->
         <param name="controller_config" value="$(find-pkg-share norlab_controllers_wrapper)/params/husky/snow/ideal-diff-drive-mpc.yaml"/>
-        <param name="rotation_controller_config" value="$(find-pkg-share norlab_controllers_wrapper)/params/husky/snow/husky-rotation-p.yaml"/>
+        <param name="rotation_controller_config" value="$(find-pkg-share norlab_controllers_wrapper)/params/husky/snow/rotation-p.yaml"/>
     </node>
 </launch>
