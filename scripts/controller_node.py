@@ -14,8 +14,8 @@ from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path as Ros2Path
 
-from norlabcontrollib.path.path import Path
-from norlabcontrollib.controllers.controller_factory import ControllerFactory
+from norlab_controllers.norlabcontrollib.path.path import Path
+from norlab_controllers.norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlab_controllers_msgs.action import FollowPath
 
 
