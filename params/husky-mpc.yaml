@@ -13,10 +13,10 @@ query_radius: 50
 query_knn: 10
 id_window_size: 5
 horizon_length: 30
-state_cost_translational: 1
-state_cost_rotational: 0.0
-input_cost_wheel: 0.01
-angular_velocity_gain: 2
+state_cost_translational: 2 # optimized 
+state_cost_rotational: 0.0 
+input_cost_wheel: 0.02 # optimized
+angular_velocity_gain: 1 # optimized
 #input_cost_angular: 1
 ancillary_gain_linear: 1
 ancillary_gain_angular: 1

@@ -64,6 +64,10 @@ class ControllerNode(Node):
         self.waiting_for_path = True
         self.loading_path = False
         self.executing_path = False
+        self.get_logger().info('angular_velocity_gain ='+str(self.controller.angular_velocity_gain))
+        self.get_logger().info('state_cost_translational ='+str(self.controller.state_cost_translational))
+        self.get_logger().info('state_cost_rotational ='+str(self.controller.state_cost_rotational))
+        self.get_logger().info('input_cost_wheel ='+str(self.controller.input_cost_wheel))
 
     def quaternion_to_euler(self, w, x, y, z):
         sinr_cosp = 2 * (w * x + y * z)
