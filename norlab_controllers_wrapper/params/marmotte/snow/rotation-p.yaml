@@ -1,0 +1,8 @@
+controller_name: 'DifferentialRotationP'
+rate: 20
+minimum_linear_velocity: 0.1
+maximum_linear_velocity: 1.0
+maximum_angular_velocity: 1.0
+goal_tolerance: 0.1
+p_gain: 0.8
+
