@@ -1,0 +1,29 @@
+## Request to follow a path
+
+# follower_options: Options for the path follower
+FollowerOptions follower_options
+
+# path: The path to follow
+PathSequence path
+
+---
+# RESULT DEFINITION
+
+#std_msgs/UInt32 result_status_unknown
+#std_msgs/UInt32 result_status_obstacle
+#std_msgs/UInt32 result_status_success
+#std_msgs/UInt32 result_status_aborted
+#std_msgs/UInt32 result_status_internal
+#std_msgs/UInt32 result_status_slam_fail
+#std_msgs/UInt32 result_status_tf_fail
+#std_msgs/UInt32 result_status_path_lost
+#std_msgs/UInt32 result_status_timeout
+std_msgs/UInt32 result_status
+
+---
+# FEEDBACK DEFINITION
+
+#std_msgs/UInt32 motion_status_moving
+#std_msgs/UInt32 motion_status_no_local_path
+std_msgs/UInt32 feedback_status
+

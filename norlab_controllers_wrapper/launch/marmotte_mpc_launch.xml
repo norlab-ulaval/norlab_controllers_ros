@@ -1,0 +1,8 @@
+<launch>
+    <node pkg="norlab_controllers_wrapper" exec="controller_node.py" name="controller_node" output="screen">
+        <remap from="odom_in" to="icp_odom"/>
+        <remap from="cmd_vel_out" to="nav_vel"/>
+        <param name="controller_config" value="$(find-pkg-share norlab_controllers_wrapper)/params/marmotte-ideal-diff-drive-mpc.yaml"/>
+        <param name="rotation_controller_config" value="$(find-pkg-share norlab_controllers_wrapper)/params/marmotte-rotation-p.yaml"/>
+    </node>
+</launch>
