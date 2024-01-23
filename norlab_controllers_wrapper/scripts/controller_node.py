@@ -32,8 +32,10 @@ class ControllerNode(Node):
 
         self.declare_parameter('controller_config')
         controller_config_path = self.get_parameter('controller_config').get_parameter_value().string_value
+        self.get_logger().info(f"Controller config: {controller_config_path}")
         self.declare_parameter('rotation_controller_config')
         rotation_controller_config_path = self.get_parameter('rotation_controller_config').get_parameter_value().string_value
+        self.get_logger().info(f"Rotation controller config: {rotation_controller_config_path}")
 
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)

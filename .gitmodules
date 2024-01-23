@@ -1,3 +1,6 @@
 [submodule "scripts/norlab_controllers"]
 	path = scripts/norlab_controllers
 	url = git@github.com:norlab-ulaval/norlab_controllers.git
+[submodule "norlab_controllers"]
+	path = norlab_controllers
+	url = git@github.com:norlab-ulaval/norlab_controllers.git
