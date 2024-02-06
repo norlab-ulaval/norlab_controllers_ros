@@ -217,6 +217,7 @@ class ControllerNode(Node):
             self.rotation_controller.update_path(self.goal_paths_list[i])
             self.publish_reference_path()
             self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
+
             # while loop to repeat a single goal path
             if i > 0 and self.rotation_controller_bool:
                 while self.rotation_controller.angular_distance_to_goal >= self.rotation_controller.goal_tolerance:
@@ -225,31 +226,16 @@ class ControllerNode(Node):
             self.last_distance_to_goal = 1000
             self.controller.compute_distance_to_goal(self.state, 0)
             self.controller.last_path_pose_id = 0
-            # DEBUG
-            # self.get_logger().info('reftraj_x0' + str(self.controller.path.poses[0,0]))
-            # self.get_logger().info('reftraj_y0' + str(self.controller.path.poses[0,1]))
+
             for j in range(0, self.controller.path.n_poses):
                 self.get_logger().info('ref_traj_x_' + str(j) + ' ' + str(self.controller.path.poses[j, 0]))
                 self.get_logger().info('ref_traj_y_' + str(j) + ' ' + str(self.controller.path.poses[j, 1]))
+
             while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
                 self.publish_optimal_path()
                 self.publish_target_path()
-                # DEBUG
-                # self.get_logger().info('optimal left : ' + str(self.controller.optimal_left))
-                # self.get_logger().info('optimal right : ' + str(self.controller.optimal_right))
-                # self.get_logger().info('controller_x : ' + str(self.controller.planar_state[0]))
-                # self.get_logger().info('controller_y : ' + str(self.controller.planar_state[1]))
-                # self.get_logger().info('controller_yaw : ' + str(self.controller.planar_state[2]))
-                # for j in range(0, self.controller.horizon_length):
-                #     self.get_logger().info('target_traj_x_' + str(j) + ' ' + str(self.controller.target_trajectory[0, j]))
-                #     self.get_logger().info('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
-                    # self.get_logger().info('optimal_left_' + str(j) + ' ' + str(self.controller.optim_solution_array[j]))
-                    # self.get_logger().info('optimal_right_' + str(j) + ' ' + str(self.controller.optim_solution_array[j + self.controller.horizon_length]))
-                # self.get_logger().info('Path Curvature : ' + str(self.controller.path_curvature))
-                # self.get_logger().info('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
-                # self.get_logger().info('Distance_to_goal : ' + str(self.controller.distance_to_goal))
-                # self.get_logger().info('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
+                self.print_debug()
                 if self.controller.orthogonal_projection_id >= self.controller.path.n_poses-1:
                     if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
                         break
@@ -284,13 +270,27 @@ class ControllerNode(Node):
                     result_status.data = 1  # 1 for success
                     paths_result.result_status = result_status
                     return paths_result
-                    self.executing_path = False
-                    return None
                 self.get_logger().info("Executing path " + str(self.path_id + 1) + " of " + str(self.number_of_goal_paths))
                 self.controller.update_path(self.goal_paths_list[self.path_id])
 
             else:
                 return None
+            
+    def print_debug(self):
+        self.get_logger().debug('optimal left : ' + str(self.controller.optimal_left))
+        self.get_logger().debug('optimal right : ' + str(self.controller.optimal_right))
+        self.get_logger().debug('controller_x : ' + str(self.controller.planar_state[0]))
+        self.get_logger().debug('controller_y : ' + str(self.controller.planar_state[1]))
+        self.get_logger().debug('controller_yaw : ' + str(self.controller.planar_state[2]))
+        for j in range(0, self.controller.horizon_length):
+            self.get_logger().debug('target_traj_x_' + str(j) + ' ' + str(self.controller.target_trajectory[0, j]))
+            self.get_logger().debug('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
+            self.get_logger().debug('optimal_left_' + str(j) + ' ' + str(self.controller.optim_solution_array[j]))
+            self.get_logger().debug('optimal_right_' + str(j) + ' ' + str(self.controller.optim_solution_array[j + self.controller.horizon_length]))
+        self.get_logger().debug('Path Curvature : ' + str(self.controller.path_curvature))
+        self.get_logger().debug('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
+        self.get_logger().debug('Distance_to_goal : ' + str(self.controller.distance_to_goal))
+        self.get_logger().debug('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
 
 
 def main(args=None):
