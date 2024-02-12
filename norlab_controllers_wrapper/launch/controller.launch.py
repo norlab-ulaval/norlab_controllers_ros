@@ -48,7 +48,7 @@ def launch_controller_node(context, *args, **kwargs):
         ],
         remappings=[
             ("odom_in", "icp_odom"),
-            ("cmd_vel_out", "nav_vel")
+            ("cmd_vel_out", "cmd_vel" if "warthog" in arg_robot else "nav_vel")
         ]
     )
 

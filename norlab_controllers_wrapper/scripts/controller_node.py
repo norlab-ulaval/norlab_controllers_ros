@@ -183,7 +183,6 @@ class ControllerNode(Node):
             self.ref_path_msg.poses.append(pose)
         self.ref_path_publisher_.publish(self.ref_path_msg)
 
-
     def follow_path_callback(self, path_goal_handle):
         ## Importing all goal paths
         self.get_logger().info("Importing goal paths...")
@@ -231,16 +230,16 @@ class ControllerNode(Node):
                 self.get_logger().info('ref_traj_x_' + str(j) + ' ' + str(self.controller.path.poses[j, 0]))
                 self.get_logger().info('ref_traj_y_' + str(j) + ' ' + str(self.controller.path.poses[j, 1]))
 
-            while self.controller.euclidean_distance_to_goal >= self.controller.goal_tolerance:
+            while self.controller.distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
                 self.publish_optimal_path()
                 self.publish_target_path()
                 self.print_debug()
                 if self.controller.orthogonal_projection_id >= self.controller.path.n_poses-1:
-                    if self.controller.euclidean_distance_to_goal > self.last_distance_to_goal:
+                    if self.controller.distance_to_goal > self.last_distance_to_goal:
                         break
                     else:
-                        self.last_distance_to_goal = self.controller.euclidean_distance_to_goal
+                        self.last_distance_to_goal = self.controller.distance_to_goal
                 self.rate.sleep()
 
         self.cmd_vel_msg = Twist()
@@ -255,26 +254,6 @@ class ControllerNode(Node):
         result_status.data = 1  # 1 for success
         paths_result.result_status = result_status
         return paths_result
-
-    def follow_path_spinner(self):
-        if self.executing_path:
-            self.compute_then_publish_command()
-            if self.controller.distance_to_goal <= self.controller.goal_tolerance:
-                self.path_id += 1
-                if self.path_id >= self.number_of_goal_paths:
-                    self.get_logger().info("SUCCESS")
-                    ## return completed path to action client
-                    self.path_goal_handle.set_succeeded()
-                    paths_result = FollowPath.Result()
-                    result_status = std_msgs.msg.UInt32()
-                    result_status.data = 1  # 1 for success
-                    paths_result.result_status = result_status
-                    return paths_result
-                self.get_logger().info("Executing path " + str(self.path_id + 1) + " of " + str(self.number_of_goal_paths))
-                self.controller.update_path(self.goal_paths_list[self.path_id])
-
-            else:
-                return None
             
     def print_debug(self):
         self.get_logger().debug('optimal left : ' + str(self.controller.optimal_left))
@@ -287,8 +266,8 @@ class ControllerNode(Node):
             self.get_logger().debug('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
             self.get_logger().debug('optimal_left_' + str(j) + ' ' + str(self.controller.optim_solution_array[j]))
             self.get_logger().debug('optimal_right_' + str(j) + ' ' + str(self.controller.optim_solution_array[j + self.controller.horizon_length]))
-        self.get_logger().debug('Path Curvature : ' + str(self.controller.path_curvature))
-        self.get_logger().debug('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
+        #self.get_logger().debug('Path Curvature : ' + str(self.controller.path_curvature))
+        self.get_logger().debug('look ahead distance counter : ' + str(self.controller.path_look_ahead_distance))
         self.get_logger().debug('Distance_to_goal : ' + str(self.controller.distance_to_goal))
         self.get_logger().debug('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
 

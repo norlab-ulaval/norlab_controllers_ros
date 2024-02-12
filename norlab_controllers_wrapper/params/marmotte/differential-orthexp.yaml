@@ -10,5 +10,5 @@ gain_distance_to_goal_linear: 0.8
 gain_path_curvature_linear: 0.0
 path_look_ahead_distance: 1.5
 query_radius: 50
-id_window_size: 5
+id_window_size: 50
 
