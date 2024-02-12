@@ -17,7 +17,8 @@ from nav_msgs.msg import Path as Ros2Path
 from norlabcontrollib.path.path import Path
 from norlabcontrollib.controllers.controller_factory import ControllerFactory
 from norlab_controllers_msgs.action import FollowPath
-
+from rcl_interfaces.msg import SetParametersResult
+import yaml
 
 class ControllerNode(Node):
 
@@ -37,14 +38,21 @@ class ControllerNode(Node):
         rotation_controller_config_path = self.get_parameter('rotation_controller_config').get_parameter_value().string_value
         self.get_logger().info(f"Rotation controller config: {rotation_controller_config_path}")
 
+        
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(controller_config_path)
+
         if rotation_controller_config_path == 'None':
             self.rotation_controller_bool = False
         else:
             self.rotation_controller = self.controller_factory.load_parameters_from_yaml(rotation_controller_config_path)
             self.rotation_controller_bool = True
 
+        # Add the dynamic parameter
+        self.init_params(controller_config_path)
+        
+
+        #
         self.state = np.zeros(6) # [x, y, z, roll, pitch, yaw]
         self.velocity = np.zeros(6) # [vx, vy, vz, v_roll, v_pitch, v_yaw]
         self.state_velocity_mutex = Lock()
@@ -79,6 +87,56 @@ class ControllerNode(Node):
         self.waiting_for_path = True
         self.loading_path = False
         self.executing_path = False
+
+
+        
+        
+    def init_params(self,yaml_file_path):
+        
+        # Get dict format of the parameter 
+        with open(yaml_file_path) as yaml_file:
+            yaml_params = yaml.full_load(yaml_file)
+            self.get_logger().info(str(yaml_params))
+            
+            for init_param,init_value in (yaml_params.items()):
+                param = self.declare_parameter(init_param, init_value)
+                self.get_logger().info(f'{param.name}={param.value}')
+
+        self.add_on_set_parameters_callback(self.on_params_changed)
+ 
+    def on_params_changed(self, params):
+
+        param: rclpy.Parameter
+        
+        # angular_velocity_gain: 1.8
+        self.get_logger().info(str(self.controller.input_cost_matrix_i))
+        
+        current_params = self.controller.__dict__
+        
+        #self.get_logger().info(str(current_params))
+        
+        for param in params:
+                
+            # Parameter for the ideal-diff-drive-mpc
+            if param.name in current_params.keys():
+                # Va chercher dans le dictionnaire des param'etres du controleur la valeur
+                param_in_controller = self.controller.__dict__[param.name]
+                self.get_logger().info(f'Try to set [{param.name}] = {param_in_controller}')
+
+                current_params[param.name] = param.value
+                self.controller.__dict__[param.name] = param.value
+                
+                param_in_controller = self.controller.__dict__[param.name]
+                self.get_logger().info(f'The param [{param.name}] has been set to {param_in_controller}')
+                
+            else:
+                continue
+
+        #self.get_logger().info(f"After change parameters {self.controller.__dict__}")
+            # ros2 param get /controller_node angular_velocity_gain 
+            # ros2 param set /controller_node angular_velocity_gain  3.0
+            # ros2 param list
+        return SetParametersResult(successful=True, reason='Parameter set')
 
     def quaternion_to_euler(self, w, x, y, z):
         sinr_cosp = 2 * (w * x + y * z)
