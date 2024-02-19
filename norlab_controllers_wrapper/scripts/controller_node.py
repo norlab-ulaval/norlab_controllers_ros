@@ -345,10 +345,10 @@ class ControllerNode(Node):
             self.get_logger().debug('target_traj_y_' + str(j) + ' ' + str(self.controller.target_trajectory[1, j]))
             self.get_logger().debug('optimal_left_' + str(j) + ' ' + str(self.controller.optim_solution_array[j]))
             self.get_logger().debug('optimal_right_' + str(j) + ' ' + str(self.controller.optim_solution_array[j + self.controller.horizon_length]))
-        self.get_logger().debug('Path Curvature : ' + str(self.controller.path_curvature))
-        self.get_logger().debug('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
-        self.get_logger().debug('Distance_to_goal : ' + str(self.controller.distance_to_goal))
-        self.get_logger().debug('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
+        #self.get_logger().debug('Path Curvature : ' + str(self.controller.path_curvature))
+        #self.get_logger().debug('look ahead distance counter : ' + str(self.controller.look_ahead_distance))
+        #self.get_logger().debug('Distance_to_goal : ' + str(self.controller.distance_to_goal))
+        #self.get_logger().debug('Euclidean Distance_to_goal : ' + str(self.controller.euclidean_distance_to_goal))
 
 
 def main(args=None):
