@@ -11,7 +11,7 @@ query_knn: 10
 id_window_size: 50
 horizon_length: 30
 state_cost_translational: 1.0
-state_cost_rotational: 0.0
+state_cost_rotational: 0.5
 input_cost_wheel: 0.01
 angular_velocity_gain: 2.0
 wheel_radius: 0.165
