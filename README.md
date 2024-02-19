@@ -1,29 +1,47 @@
 # Norlab controllers ROS
 
 ## Description
-The Norlab's robots are collecting datasets and capturing Light Detection and Ranging (LiDAR) maps in subarctic forests using an autonomous teach-and-repeat system designed to be robust to kilometer-scale navigation, severe weather, and GNSS-denied conditions. During the teach phase, the robot is driven along a specific path by a human operator. A reference map and a reference path are meanwhile recorded and stored in the robot’s database. Then, during the repeat phase, a path following algorithm computes the output system commands to steer the vehicle along the reference path. This path following algorithm used is a Model Predictive Control (MPC).
+Norlab controllers ROS is a set of ROS packages enabling path following for uncrewed ground vehicles (UGVs).
+This repository also includes the [`norlab_controllers`](https://github.com/norlab-ulaval/norlab_controllers) python library providing an implementation of various popular controllers.
+The goal of this repository is to offer a lean and modular solution for UGV path following.
 
-The implementation of this MPC algorithm is divided into two parts: a Robot Operating System (ROS) repository named [norlab_controllers_ros](https://github.com/norlab-ulaval/norlab_controllers_ros) and a python library named [norlab_controllers](https://github.com/norlab-ulaval/norlab_controllers). The ROS repository receives the robot's current position and target path from other ROS perception ([mapping repository](https://github.com/norlab-ulaval/husky_mapping)) and planning ([wiln repository](https://github.com/norlab-ulaval/wiln))  nodes, and sends commands to the motors. However, this ROS repository does not handle the optimization computations required to operate the controller. These calculations are performed by the Python library, which is not part of the robot's ROS architecture. This library has deliberately been placed outside the ROS architecture, to make it easier to use in other contexts. The latter is responsible for finding the argument that minimizes a cost function, corresponding to the optimization problem. This optimization is performed using the [CasADi](https://web.casadi.org/) open-source tool specialized in optimal control. Using symbolic programming and algorithmic differentiation, this tool solves the optimization problem in around 6 ms.
+For installation, you need to clone the repository in your ROS 2 workspace, initialize its submodules and install the library:
 
-## Quick start 
-Once the teach-and-repeat framework and the mapping nodes are running (using respectively the [wiln launch file](https://github.com/norlab-ulaval/wiln/blob/humble/launch/marmotte.launch.xml) FIXME BAD LINK HUSKY) and the [mapping launch file](https://github.com/norlab-ulaval/husky_mapping/blob/humble/launch/realtime_experiment.launch.xml)), the following command may be executed to start the controller:
 ```bash
-ros2 launch norlab_controllers_ros husky_mpc_launch.xml 
+cd <PATH_TO_YOUR_ROS2_WORKSPACE>/src/
+git clone git@github.com:norlab-ulaval/norlab_controllers_ros.git
+git submodule init
+git submodule update
+cd norlab_controllers_ros/norlab_controllers/
+./install.sh
+cd <PATH_TO_YOUR_ROS2_WORKSPACE>/src/
+colcon build --symlink-install
+source install/local_setup.bash
 ```
-Then, the different services of [wiln](https://github.com/norlab-ulaval/wiln) are used to perform teach-and-repeat operation.
+
+## Usage
+
+The main package, [`norlab_controllers_wrapper`](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/norlab_controllers_wrapper) acts as a [ROS2 action server](https://docs.ros.org/en/humble/Tutorials/Intermediate/Writing-an-Action-Server-Client/Py.html).
+The server recieves target paths as actions sent by the client, these custom actions are defined in the [`norlab_controllers_msgs`](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/norlab_controllers_msgs) package.
+Refer to our [`WILN`](https://github.com/norlab-ulaval/wiln) package for a functional implementation of a action client.
+
+## Launching the nodes
+
+A set of launch files are provided in the [`norlab_controllers_wrapper`](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/norlab_controllers_wrapper) package.
+These launch files allow to run the path-following nodes:
+```bash
+ros2 launch norlab_controllers_wrapper warthog_wheels_mpc_launch.xml
+```
+For quick bootstrapping, the different services of [`WILN`](https://github.com/norlab-ulaval/wiln) can be used to perform teach-and-repeat operation.
 
 ## Tuning the controller's parameters
-If you wish to change the controller's parameters, to increase its performance on a particular environment for instance, you may do so in the [params folder](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/params). Please note that the [norlab_controllers_inspector](https://github.com/norlab-ulaval/norlab_controllers_inspector/tree/master) could then be used to visualize and quantify the controller performance. First, you will need to navigate to the params folder from a robot terminal by running the following command:
+
+Controller parameters are defined and can be modified in the [`params`](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/norlab_controllers_wrapper/params) folder. 
+Please note that the [`norlab_controllers_inspector`](https://github.com/norlab-ulaval/norlab_controllers_inspector/tree/master) could then be used to visualize and quantify the controller performance. 
+Controller parameters files are in the [YAML](https://en.wikipedia.org/wiki/YAML) format.
+For faster tuning, you can build your ROS2 workspace with symbolic links to prevent the requirement to rebuild the workspace anytime you change a parameter or change a script.
 ```bash
-cd workspaces/norlab_ws/src/norlab_controllers_ros/params
-```
-Then, to modify the appropriate parameters file, run the following command:
-```bash
-vim husky-mpc.yaml
-```
-Once you have made your changes, get back to the /workspaces repository and execute the following line to build the packages and incorporate your changes into the controller.
-```bash
-./symlink_build.sh
+colcon build --symlink-install
 ```
 
 
