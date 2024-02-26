@@ -2,16 +2,16 @@ controller_name: 'IdealDiffDriveMPC'
 rate: 20
 minimum_linear_velocity: 0.1      # UNUSED
 maximum_linear_velocity: 1.0      # DYNAMIC
-maximum_angular_velocity: 1.0     # DYNAMIC
-goal_tolerance: 0.1               # DYNAMIC
-path_look_ahead_distance: 1.0
-query_radius: 50    # TO REMOVE
-query_knn: 10       # TO REMOVE
-id_window_size: 5                 # DYNAMIC
+maximum_angular_velocity: 1.0     # DYNAMIC  #Does not appear in ideal
+goal_tolerance: 0.1               # DYNAMIC  #Does not appear in ideal 
+path_look_ahead_distance: 1.0     # Only initialized in ideal-diff-drive
+query_radius: 50    # TO REMOVE   # Only initialized in ideal-diff-drive
+query_knn: 10       # TO REMOVE   # Only initialized in ideal-diff-drive
+id_window_size: 5                 # DYNAMIC # To test
 horizon_length: 30                # DYNAMIC
-state_cost_translational: 1.0     # DYNAMIC
-state_cost_rotational: 0.5        # DYNAMIC
-input_cost_wheel: 0.01            # DYNAMIC
-angular_velocity_gain: 2.0        # DYNAMIC
+state_cost_translational: 1.0     # DYNAMIC Done Implemented as normal dynamique param
+state_cost_rotational: 0.5        # DYNAMIC Done Implemented as normal dynamique param
+input_cost_wheel: 0.01            # DYNAMIC Done
+angular_velocity_gain: 2.0        # DYNAMIC Implemented as normal dynamique param
 wheel_radius: 0.165               # DYNAMIC
 baseline: 0.55                    # DYNAMIC
