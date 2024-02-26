@@ -130,7 +130,7 @@ class ControllerNode(Node):
                 self.get_logger().info(f'The param [{param.name}] has been set to {param_in_controller}')
                 
                 if param.name in self.controller.__dict__["param_that_start_init"]:
-                    self.controller.__dict__.function_to_re_init = True
+                    self.controller.__dict__["function_to_re_init"] = True
 
                 
             else:
