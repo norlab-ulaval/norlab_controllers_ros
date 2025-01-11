@@ -38,20 +38,11 @@ class ControllerNode(Node):
         os.chdir(dname)
         self.get_logger().info(os.getcwd())
 
-        self.declare_parameter("controller_config")
-        controller_config_path = (
-            self.get_parameter("controller_config").get_parameter_value().string_value
-        )
+        controller_config_path = self.declare_parameter("controller_config", "None").value
         self.get_logger().info(f"Controller config: {controller_config_path}")
-        self.declare_parameter("rotation_controller_config")
-        rotation_controller_config_path = (
-            self.get_parameter("rotation_controller_config")
-            .get_parameter_value()
-            .string_value
-        )
-        self.get_logger().info(
-            f"Rotation controller config: {rotation_controller_config_path}"
-        )
+        
+        rotation_controller_config_path = self.declare_parameter("rotation_controller_config", "None").value
+        self.get_logger().info(f"Rotation controller config: {rotation_controller_config_path}")
 
         self.controller_factory = ControllerFactory()
         self.controller = self.controller_factory.load_parameters_from_yaml(
@@ -61,10 +52,8 @@ class ControllerNode(Node):
         if rotation_controller_config_path == "None":
             self.rotation_controller_bool = False
         else:
-            self.rotation_controller = (
-                self.controller_factory.load_parameters_from_yaml(
-                    rotation_controller_config_path
-                )
+            self.rotation_controller = self.controller_factory.load_parameters_from_yaml(
+                rotation_controller_config_path
             )
             self.rotation_controller_bool = True
 
