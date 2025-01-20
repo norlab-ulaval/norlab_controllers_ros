@@ -239,6 +239,7 @@ class ControllerNode(Node):
                 "xyz"
             )
             self.last_odom_time = self.get_clock().now().nanoseconds * 1e-9
+            self.odom_counter += 1
         except:
             self.get_logger().warn("Failed to get transform from base_link to map.")
 
@@ -329,6 +330,9 @@ class ControllerNode(Node):
             current_path_array = np.zeros((current_path_length, 6))
             for i in range(0, current_path_length):
                 position = current_path.poses[i].pose.position
+                self.get_logger().info(
+                    f"Position: {position}"
+                )
                 orientation = current_path.poses[i].pose.orientation
                 current_path_array[i, :3] = [position.x, position.y, position.z]
                 current_path_array[i, 3:] = R.from_quat(
@@ -367,10 +371,15 @@ class ControllerNode(Node):
                     self.compute_then_publish_rotation_command()
                     self.rate.sleep()
             self.last_distance_to_goal = 1000
+            self.get_logger().info(f"State: {self.state}")
+            self.get_logger().info(f"Goal: {self.controller.path.poses[-1, :2]}")
+            self.get_logger().info(f"Distance: {np.linalg.norm(self.controller.path.poses[-1, :2] - self.state[:2])}")
             self.controller.compute_distance_to_goal(self.state, 0)
             self.controller.next_path_idx = 0
 
             self.get_logger().debug(f"Ref path: {self.controller.path.poses}")
+
+            self.get_logger().info(f"distance to goal: {self.controller.distance_to_goal}")
 
             while self.controller.distance_to_goal >= self.controller.goal_tolerance:
                 self.compute_then_publish_command()
