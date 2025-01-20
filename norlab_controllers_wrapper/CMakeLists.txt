@@ -21,4 +21,10 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
+message("Installing norlab_controllers...")
+execute_process(
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../norlab_controllers
+  COMMAND bash -c "./install.sh"
+)
+
 ament_package()
