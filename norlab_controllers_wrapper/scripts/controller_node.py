@@ -159,7 +159,12 @@ class ControllerNode(Node):
                 #self.set_parameters(parameter)
         
         self.get_logger().info("\n"*5+"all parameters have been set"+"\n"*5)
-        
+        self.get_logger().info(str(self.controller.absolute_path_in_init))
+        self.get_logger().info(str(self.controller.pwrtrain_path_in_int))
+        self.get_logger().info(str(self.controller.absolute_path_left_pwrtrain_param))
+        self.get_logger().info(str(self.controller.absolute_path_right_pwrtrain_param))
+        self.get_logger().info(str(self.controller.absolute_path_slip_BLR_param))
+        self.get_logger().info(str(self.controller.param_to_show))
         # Response : successfull 
         ros_bool = Bool()
         ros_bool.data = True
