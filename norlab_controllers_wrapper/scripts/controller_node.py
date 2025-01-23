@@ -272,6 +272,7 @@ class ControllerNode(Node):
                 goal_handle.canceled()
                 self.get_logger().info('Goal canceled! Stopping robot.')
                 self.stop_robot()
+                self.clear_paths()
                 return FollowPath.Result()
             
             self.compute_then_publish_command()
