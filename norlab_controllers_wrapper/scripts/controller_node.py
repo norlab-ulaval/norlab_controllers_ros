@@ -283,6 +283,7 @@ class ControllerNode(Node):
                 goal_handle.canceled()
                 self.get_logger().info('Goal canceled! Stopping robot.')
                 self.stop_robot()
+                self.clear_paths()
                 return FollowPath.Result()
             self.get_logger().info(f"Distance to goal: {self.controller.distance_to_goal} m.")
             self.get_logger().debug(f"Angular distance_to_goal: {self.controller.angular_distance_to_goal}")
