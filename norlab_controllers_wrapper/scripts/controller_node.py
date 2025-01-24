@@ -13,7 +13,7 @@ from multiprocessing import Lock
 from geometry_msgs.msg import Twist, TwistStamped, PoseStamped, Point, Quaternion
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path as Ros2Path
-from std_msgs.msg import UInt32
+from std_msgs.msg import UInt32,Float32
 
 from tf2_ros import Buffer, TransformListener
 
@@ -106,6 +106,12 @@ class ControllerNode(Node):
         self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
         self.last_odom_time = self.get_clock().now().nanoseconds * 1e-9
 
+        self.angular_goal_bool_pub = self.create_publisher(Float32, 'distance_2_goal', 10)
+        self.distance_goal_bool_pub = self.create_publisher(Float32, 'angular_distance_2_goal', 10)
+        self.timer = self.create_timer(0.5, self.publish_distance_2_goal)
+
+
+
     def init_params(self, yaml_file_path):
 
         # Get dict format of the parameter
@@ -144,6 +150,11 @@ class ControllerNode(Node):
                 continue
 
         return SetParametersResult(successful=True, reason="Parameter set")
+
+    def publish_distance_2_goal(self):
+
+        self.distance_goal_bool_pub.publish(Float32(data=float(self.controller.distance_to_goal)))
+        self.angular_goal_bool_pub.publish(Float32(data=float(self.controller.angular_distance_to_goal)))
 
     def odometry_callback(self, message):
         self.last_odom_time = self.get_clock().now().nanoseconds * 1e-9
@@ -273,7 +284,8 @@ class ControllerNode(Node):
                 self.get_logger().info('Goal canceled! Stopping robot.')
                 self.stop_robot()
                 return FollowPath.Result()
-            
+            self.get_logger().info(f"Distance to goal: {self.controller.distance_to_goal} m.")
+            self.get_logger().debug(f"Angular distance_to_goal: {self.controller.angular_distance_to_goal}")
             self.compute_then_publish_command()
             self.publish_optimal_path()
             self.publish_target_path()
@@ -290,6 +302,11 @@ class ControllerNode(Node):
 
         ## return completed path to action client
         goal_handle.succeed()
+
+        # Stop the robot 
+        self.stop_robot()
+        
+        #send results
         paths_result = FollowPath.Result()
         paths_result.result_status = UInt32(data=1)
         return paths_result
@@ -341,9 +358,10 @@ class ControllerNode(Node):
             f"look ahead distance counter: {self.controller.path_look_ahead_distance}"
         )
         self.get_logger().debug(f"Distance_to_goal: {self.controller.distance_to_goal}")
-        self.get_logger().debug(
-            f"Euclidean Distance_to_goal: {self.controller.euclidean_distance_to_goal}"
-        )
+        self.get_logger().debug(f"Angular distance_to_goal: {self.controller.angular_distance_to_goal}")
+        #self.get_logger().debug(
+        #    f"Euclidean Distance_to_goal: {self.controller.distance_to_goal}"
+        #)
 
 
 def main(args=None):
