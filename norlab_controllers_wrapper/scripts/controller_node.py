@@ -106,8 +106,8 @@ class ControllerNode(Node):
         self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
         self.last_odom_time = self.get_clock().now().nanoseconds * 1e-9
 
-        self.angular_goal_bool_pub = self.create_publisher(Float32, 'distance_2_goal', 10)
-        self.distance_goal_bool_pub = self.create_publisher(Float32, 'angular_distance_2_goal', 10)
+        self.angular_goal_bool_pub = self.create_publisher(Float32, 'angular_distance_2_goal', 10)
+        self.distance_goal_bool_pub = self.create_publisher(Float32, 'distance_2_goal', 10)
         self.timer = self.create_timer(0.5, self.publish_distance_2_goal)
 
 
@@ -298,6 +298,7 @@ class ControllerNode(Node):
                     self.last_distance_to_goal = self.controller.distance_to_goal
             self.rate.sleep()
 
+            self.get_logger().info(str(self.controller.debug_indicator))
         self.get_logger().info("SUCCESS")
         self.clear_paths()
 
