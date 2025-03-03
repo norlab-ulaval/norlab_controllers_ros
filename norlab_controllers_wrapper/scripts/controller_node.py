@@ -153,7 +153,7 @@ class ControllerNode(Node):
 
     def publish_distance_2_goal(self):
 
-        self.distance_goal_bool_pub.publish(Float32(data=float(self.controller.distance_to_goal)))
+        self.distance_goal_bool_pub.publish(Float32(data=float(self.controller.linear_distance_to_goal)))
         self.angular_goal_bool_pub.publish(Float32(data=float(self.controller.angular_distance_to_goal)))
 
     def odometry_callback(self, message):
@@ -271,12 +271,12 @@ class ControllerNode(Node):
 
         self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
         self.controller.compute_distance_to_goal(self.state, 0)
-        self.last_distance_to_goal = self.controller.distance_to_goal
+        self.last_distance_to_goal = self.controller.linear_distance_to_goal
         self.controller.next_path_idx = 0
 
         self.get_logger().info(f"Initial state: {self.state}")
         self.get_logger().info(f"Ref path: {self.controller.path.poses}")
-        self.get_logger().info(f"Distance to goal: {self.controller.distance_to_goal} m.")
+        self.get_logger().info(f"Distance to goal: {self.controller.linear_distance_to_goal} m.")
 
         while not self.controller.goal_reached():
             if goal_handle.is_cancel_requested:
@@ -285,17 +285,17 @@ class ControllerNode(Node):
                 self.stop_robot()
                 self.clear_paths()
                 return FollowPath.Result()
-            self.get_logger().info(f"Distance to goal: {self.controller.distance_to_goal} m.")
+            self.get_logger().info(f"Distance to goal: {self.controller.linear_distance_to_goal} m.")
             self.get_logger().debug(f"Angular distance_to_goal: {self.controller.angular_distance_to_goal}")
             self.compute_then_publish_command()
             self.publish_optimal_path()
             self.publish_target_path()
             self.print_debug()
             if self.controller.next_path_idx >= self.controller.path.n_poses - 1:
-                if self.controller.distance_to_goal > self.last_distance_to_goal:
+                if self.controller.linear_distance_to_goal > self.last_distance_to_goal:
                     break
                 else:
-                    self.last_distance_to_goal = self.controller.distance_to_goal
+                    self.last_distance_to_goal = self.controller.linear_distance_to_goal
             self.rate.sleep()
 
             self.get_logger().info(str(self.controller.debug_indicator))
@@ -359,11 +359,8 @@ class ControllerNode(Node):
         self.get_logger().debug(
             f"look ahead distance counter: {self.controller.path_look_ahead_distance}"
         )
-        self.get_logger().debug(f"Distance_to_goal: {self.controller.distance_to_goal}")
+        self.get_logger().debug(f"Distance_to_goal: {self.controller.linear_distance_to_goal}")
         self.get_logger().debug(f"Angular distance_to_goal: {self.controller.angular_distance_to_goal}")
-        #self.get_logger().debug(
-        #    f"Euclidean Distance_to_goal: {self.controller.distance_to_goal}"
-        #)
 
 
 def main(args=None):
