@@ -207,12 +207,12 @@ class ControllerNode(Node):
             if self.last_compute_time < self.last_odom_time:
                 start_time = time.time()
                 command_vector = self.controller.compute_command_vector(self.state)
-                self.get_logger().info(f"Computing delay: {time.time() - start_time} sec")
+                self.get_logger().debug(f"Computing delay: {time.time() - start_time} sec")
                 self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
-                self.get_logger().info("COMPUTING!")
+                self.get_logger().debug("COMPUTING!")
             else:
                 command_vector, id = self.controller.get_next_command()
-                self.get_logger().info(f"Executing next command, {id}.")
+                self.get_logger().debug(f"Executing next command, {id}.")
             cmd_vel_msg = self.command_array_to_twist_msg(command_vector)
             self.cmd_publisher_.publish(cmd_vel_msg)
 
@@ -285,7 +285,7 @@ class ControllerNode(Node):
                 self.stop_robot()
                 self.clear_paths()
                 return FollowPath.Result()
-            self.get_logger().info(f"Distance to goal: {self.controller.linear_distance_to_goal} m.")
+            self.get_logger().debug(f"Distance to goal: {self.controller.linear_distance_to_goal} m.")
             self.get_logger().debug(f"Angular distance_to_goal: {self.controller.angular_distance_to_goal}")
             self.compute_then_publish_command()
             self.publish_optimal_path()
@@ -298,7 +298,7 @@ class ControllerNode(Node):
                     self.last_distance_to_goal = self.controller.linear_distance_to_goal
             self.rate.sleep()
 
-            self.get_logger().info(str(self.controller.debug_indicator))
+            self.get_logger().debug(str(self.controller.debug_indicator))
         self.get_logger().info("SUCCESS")
         self.clear_paths()
 
