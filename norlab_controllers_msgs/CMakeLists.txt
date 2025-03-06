@@ -9,15 +9,14 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/FollowPath.action"
-  "msg/DirectionalPath.msg"
-  "msg/PathSequence.msg"
   "msg/FollowerOptions.msg"
   "srv/ExportData.srv"
-  DEPENDENCIES std_msgs geometry_msgs
+  DEPENDENCIES std_msgs nav_msgs
 )
 
 include_directories(

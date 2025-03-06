@@ -4,7 +4,7 @@
 FollowerOptions follower_options
 
 # path: The path to follow
-PathSequence path
+nav_msgs/Path path
 
 ---
 # RESULT DEFINITION
