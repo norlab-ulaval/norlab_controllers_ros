@@ -7,8 +7,8 @@ linear_goal_tolerance: 0.5
 angular_goal_tolerance: 0.5
 id_window_size: 50
 horizon_length: 30
-state_cost_translational: 1.0
-state_cost_rotational: 0.0
+linear_state_cost: 1.0
+angular_state_cost: 0.0
 input_cost_wheel: 0.02
 wheel_radius: 0.285
 baseline: 1.20
