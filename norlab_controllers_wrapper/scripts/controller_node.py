@@ -41,10 +41,11 @@ class ControllerNode(Node):
         self.state = np.zeros(6)  # [x, y, z, roll, pitch, yaw]
         self.state_mutex = Lock()
         self.cmd_vel_msg = Twist()
+        self.current_velocity = Twist()
 
         # Initialize action server
         self._action_server = ActionServer(
-            self, FollowPath, "/follow_path", self.follow_path_callback, cancel_callback=self.cancel_callback
+            self, FollowPath, self.follow_path_topic, self.follow_path_callback, cancel_callback=self.cancel_callback
         )
 
         self.rate = self.create_rate(self.controller.rate)
@@ -59,6 +60,7 @@ class ControllerNode(Node):
 
         self.map_frame = self.declare_parameter("map_frame", "map").value
         self.robot_frame = self.declare_parameter("robot_frame", "base_link").value
+        self.follow_path_topic = self.declare_parameter("follow_path_topic", "follow_path").value
 
         self.get_logger().info("Controller parameters:")
         with open(self.controller_config) as yaml_file:
@@ -97,6 +99,7 @@ class ControllerNode(Node):
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=True)
+        self.odom_sub = self.create_subscription(Odometry, "/warthog/platform/odom", self.odom_callback, 10)
 
 
     def init_publishers(self):
@@ -114,6 +117,12 @@ class ControllerNode(Node):
 
         self.tf_timer = self.create_timer(1/self.controller.rate, self.update_robot_pose)
         self.distance_timer = self.create_timer(0.5, self.publish_distance_to_goal)
+
+    
+    def odom_callback(self, msg):
+
+        self.current_velocity = msg.twist.twist;
+        self.get_logger().info(f"New velocity: [{self.current_velocity.linear.x}, {self.current_velocity.angular.z}]")
 
 
     def update_robot_pose(self):
@@ -139,6 +148,7 @@ class ControllerNode(Node):
 
         current_path = self.custom_path_from_msg(goal_handle.request.path)
         self.controller.update_path(current_path)
+        self.controller.update_velocity(self.current_velocity.linear.x, self.current_velocity.angular.z)
         self.publish_reference_path()
 
         self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))

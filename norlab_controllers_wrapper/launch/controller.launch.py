@@ -56,6 +56,7 @@ def launch_controller_node(context, *args, **kwargs):
             {"controller_config": controller_config_path},
             {"map_frame": "map"},
             {"robot_frame": "base_link"},
+            {"follow_path_topic": "follow_path"},
         ]
     )
 
