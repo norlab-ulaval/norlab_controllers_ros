@@ -122,7 +122,7 @@ class ControllerNode(Node):
     def odom_callback(self, msg):
 
         self.current_velocity = msg.twist.twist;
-        self.get_logger().info(f"New velocity: [{self.current_velocity.linear.x}, {self.current_velocity.angular.z}]")
+        # self.get_logger().info(f"New velocity: [{self.current_velocity.linear.x}, {self.current_velocity.angular.z}]")
 
 
     def update_robot_pose(self):
@@ -148,7 +148,7 @@ class ControllerNode(Node):
 
         current_path = self.custom_path_from_msg(goal_handle.request.path)
         self.controller.update_path(current_path)
-        self.controller.update_velocity(self.current_velocity.linear.x, self.current_velocity.angular.z)
+        
         self.publish_reference_path()
 
         self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
