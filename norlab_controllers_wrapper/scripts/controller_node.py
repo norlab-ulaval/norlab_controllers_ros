@@ -49,8 +49,8 @@ class ControllerNode(Node):
         )
 
         self.rate = self.create_rate(self.controller.rate)
-        self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
-        self.last_tf_time = self.get_clock().now().nanoseconds * 1e-9
+        self.last_compute_time = 0.0
+        self.last_tf_time = 0.0
 
 
     def init_parameters(self):
@@ -139,12 +139,17 @@ class ControllerNode(Node):
                 self.get_logger().warn("The last TF message is older than 1 second!")
 
         except Exception as e:
-            self.get_logger().warn(f"Failed to get transform: {e}")
+            self.get_logger().log(f"Failed to get transform: {e}", rclpy.logging.LoggingSeverity.WARN, throttle_duration_sec=1.0)
 
 
     def follow_path_callback(self, goal_handle):
 
         self.get_logger().info("Received path to follow.")
+
+        if self.last_tf_time == 0.0:
+            self.get_logger().warn("No TF received yet, cannot start following path.")
+            goal_handle.abort()
+            return FollowPath.Result(result_status=UInt32(data=0))
 
         current_path = self.custom_path_from_msg(goal_handle.request.path)
         self.controller.update_path(current_path)
@@ -213,8 +218,11 @@ class ControllerNode(Node):
             if self.last_compute_time < self.last_tf_time:
                 command_vector = self.controller.compute_command_vector(self.state)
                 self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
-            else:
+            elif self.last_compute_time > 0.0:
                 command_vector, id = self.controller.get_next_command()
+            else:
+                self.get_logger().warn("No control sequence computed, using zero command.")
+                command_vector = np.zeros(2)
 
         return command_vector
 
