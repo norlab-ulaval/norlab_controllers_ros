@@ -19,7 +19,7 @@ from tf2_ros import Buffer, TransformListener
 
 from norlabcontrollib.path.path import Path as CustomPath
 from norlabcontrollib.controllers.controller_factory import ControllerFactory
-from norlab_controllers_msgs.action import FollowPath
+from norlab_custom_interfaces.action import FollowPath
 from rcl_interfaces.msg import SetParametersResult
 import yaml
 

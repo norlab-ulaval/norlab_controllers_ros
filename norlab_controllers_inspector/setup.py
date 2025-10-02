@@ -12,7 +12,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
     ],
     install_requires=['setuptools'],
-    # install_requires=['setuptools', 'norlab_controllers_msgs'],
+    # install_requires=['setuptools', 'norlab_custom_interfaces'],
     zip_safe=True,
     maintainer='Cyril',
     maintainer_email='cygof@ulaval.ca',

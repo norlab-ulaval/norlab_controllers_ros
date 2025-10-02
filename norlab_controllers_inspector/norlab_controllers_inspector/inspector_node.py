@@ -8,7 +8,7 @@ from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path
 import numpy as np
 import pandas as pd
-from norlab_controllers_msgs.srv import ExportData
+from norlab_custom_interfaces.srv import ExportData
 
 
 class ControllerSubscriber(Node):

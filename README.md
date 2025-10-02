@@ -22,7 +22,7 @@ source install/local_setup.bash
 ## Usage
 
 The main package, [`norlab_controllers_wrapper`](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/norlab_controllers_wrapper) acts as a [ROS2 action server](https://docs.ros.org/en/humble/Tutorials/Intermediate/Writing-an-Action-Server-Client/Py.html).
-The server recieves target paths as actions sent by the client, these custom actions are defined in the [`norlab_controllers_msgs`](https://github.com/norlab-ulaval/norlab_controllers_ros/tree/humble/norlab_controllers_msgs) package.
+The server receives target paths as actions sent by the client, these custom actions are defined in the [`norlab_custom_interfaces`](https://github.com/norlab-ulaval/norlab_custom_interfaces) package.
 Refer to our [`WILN`](https://github.com/norlab-ulaval/wiln) package for a functional implementation of a action client.
 
 ## Launching the nodes

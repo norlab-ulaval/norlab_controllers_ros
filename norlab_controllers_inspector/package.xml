@@ -9,7 +9,7 @@
   
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
-  <depend>norlab_controllers_msgs</depend>
+  <depend>norlab_custom_interfaces</depend>
   <depend>python3-numpy</depend>
   <depend>python3-pandas</depend>
   <test_depend>ament_copyright</test_depend>
