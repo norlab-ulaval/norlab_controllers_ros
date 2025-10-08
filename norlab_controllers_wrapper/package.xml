@@ -14,7 +14,7 @@
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>norlab_custom_interfaces</exec_depend>
+  <exec_depend>controller_msgs</exec_depend>
   <!-- <depend>norlab_controllers</depend> -->
 
   <test_depend>python3-pytest</test_depend>
