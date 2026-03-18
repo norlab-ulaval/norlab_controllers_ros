@@ -1,0 +1,16 @@
+controller_name: 'IdealArticulatedDriveMPC'
+rate: 20
+minimum_linear_velocity: 0.1
+maximum_linear_velocity: 1.0
+maximum_angular_velocity: 0.5
+linear_goal_tolerance: 0.5
+angular_goal_tolerance: 0.5
+id_window_size: 50
+horizon_length: 30
+state_cost_translational: 1.0
+state_cost_rotational: 0.0
+input_cost_wheel: 0.02
+wheel_radius: 0.2
+L_front: 1.0
+L_back: 1.0
+baseline: 1.20

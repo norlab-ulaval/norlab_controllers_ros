@@ -10,7 +10,7 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import qos_profile_action_status_default
 from multiprocessing import Lock
 
-from geometry_msgs.msg import Twist, TwistStamped, PoseStamped, Point, Quaternion
+from geometry_msgs.msg import TwistStamped, PoseStamped, Point, Quaternion
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path
 from std_msgs.msg import UInt32,Float32
@@ -40,8 +40,8 @@ class ControllerNode(Node):
         # Initialize state and command
         self.state = np.zeros(6)  # [x, y, z, roll, pitch, yaw]
         self.state_mutex = Lock()
-        self.cmd_vel_msg = Twist()
-        self.current_velocity = Twist()
+        self.cmd_vel_msg = TwistStamped()
+        self.current_velocity = TwistStamped()
 
         # Initialize action server
         self._action_server = ActionServer(
@@ -104,8 +104,8 @@ class ControllerNode(Node):
 
     def init_publishers(self):
 
-        # self.command_pub = self.create_publisher(TwistStamped, "cmd_vel", 10)
-        self.command_pub = self.create_publisher(Twist, "cmd_vel", 10)
+        self.command_pub = self.create_publisher(TwistStamped, "cmd_vel", 10)
+        # self.command_pub = self.create_publisher(Twist, "cmd_vel", 10)
         self.optimal_path_pub = self.create_publisher(Path, "optimal_path", 100)
         self.target_path_pub = self.create_publisher(Path, "target_path", 100)
         self.reference_path_pub = self.create_publisher(Path, "ref_path", qos_profile_action_status_default)  # Makes durability transient_local
@@ -139,7 +139,7 @@ class ControllerNode(Node):
                 self.get_logger().warn("The last TF message is older than 1 second!")
 
         except Exception as e:
-            self.get_logger().log(f"Failed to get transform: {e}", rclpy.logging.LoggingSeverity.WARN, throttle_duration_sec=1.0)
+            self.get_logger().log(fa"Failed to get transform: {e}", rclpy.logging.LoggingSeverity.WARN, throttle_duration_sec=1.0)
 
 
     def follow_path_callback(self, goal_handle):
@@ -300,10 +300,10 @@ class ControllerNode(Node):
     
     def stop_robot(self):
 
-        # self.cmd_vel_msg = TwistStamped()
-        # self.cmd_vel_msg.header.stamp = self.get_clock().now().to_msg()
-        self.cmd_vel_msg = Twist()
-        self.command_pub.publish(self.cmd_vel_msg)
+        self.cmd_vel_msg = TwistStamped()
+        self.cmd_vel_msg.header.stamp = self.get_clock().now().to_msg()
+        # self.cmd_vel_msg = Twist()
+        # self.command_pub.publish(self.cmd_vel_msg)
     
     
     def clear_paths(self):

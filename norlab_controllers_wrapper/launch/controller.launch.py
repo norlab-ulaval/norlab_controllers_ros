@@ -14,8 +14,8 @@ def generate_launch_description():
     # Declare command line arguments
     controller_argument = DeclareLaunchArgument(
         'controller',
-        default_value='ideal-diff-drive-mpc',
-        description='Controller type: [differential-orthexp, ideal-diff-drive-mpc]'
+        default_value='ideal-articulated-drive-mpc',
+        description='Controller type: [differential-orthexp, ideal-diff-drive-mpc, ideal-articulated-drive-mpc]',
     )
     namespace_argument = DeclareLaunchArgument(
         'controller_ns',
