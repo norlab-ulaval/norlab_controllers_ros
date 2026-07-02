@@ -13,11 +13,13 @@ from multiprocessing import Lock
 from geometry_msgs.msg import TwistStamped, PoseStamped, Point, Quaternion
 from nav_msgs.msg import Path
 from std_msgs.msg import UInt32, Float32
+from visualization_msgs.msg import Marker, MarkerArray
 
 from tf2_ros import Buffer, TransformListener
 
 from norlabcontrollib.path.path import Path as CustomPath
 from norlabcontrollib.controllers.controller_factory import ControllerFactory
+from norlabcontrollib.controllers.mppi import MPPI
 from controller_msgs.action import FollowPath
 from rcl_interfaces.msg import SetParametersResult
 import yaml
@@ -50,6 +52,10 @@ class ControllerNode(Node):
         self.last_compute_time = 0.0
         self.last_tf_time = 0.0
 
+        # Fraction of MPPI sampled trajectories drawn in the "sampled_trajectories" marker
+        # (matches sampled_trajectories_plot_fraction in mppi.py's own debug plot).
+        self.sampled_trajectories_plot_fraction = 0.1
+
     def init_parameters(self):
 
         self.controller_config = self.declare_parameter("controller_config", "").value
@@ -80,7 +86,8 @@ class ControllerNode(Node):
                 )
 
                 self.controller.__dict__[param.name] = param.value
-                self.controller.init_casadi_model()
+                if hasattr(self.controller, "init_casadi_model"):
+                    self.controller.init_casadi_model()
 
                 self.get_logger().info(
                     f"The param [{param.name}] has been set to {self.controller.__dict__[param.name]}"
@@ -103,6 +110,7 @@ class ControllerNode(Node):
         self.reference_path_pub = self.create_publisher(
             Path, "ref_path", qos_profile_action_status_default
         )  # Makes durability transient_local
+        self.sampled_trajectories_pub = self.create_publisher(MarkerArray, "sampled_trajectories", 10)
         self.goal_linear_distance_pub = self.create_publisher(Float32, "linear_distance_to_goal", 10)
         self.goal_angular_distance_pub = self.create_publisher(Float32, "angular_distance_to_goal", 10)
 
@@ -143,7 +151,8 @@ class ControllerNode(Node):
 
         self.publish_reference_path()
 
-        self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
+        if hasattr(self.controller, "previous_input_array"):
+            self.controller.previous_input_array = np.zeros((2, self.controller.horizon_length))
         self.controller.compute_distance_to_goal(self.state, 0)
         self.last_distance_to_goal = self.controller.linear_distance_to_goal
         self.controller.next_path_idx = 0
@@ -165,6 +174,7 @@ class ControllerNode(Node):
             self.publish_command(command_vector)
             self.publish_optimal_path()
             self.publish_target_path()
+            self.publish_sampled_trajectories()
             self.print_debug()
 
             if (
@@ -201,7 +211,12 @@ class ControllerNode(Node):
     def compute_next_command(self):
 
         with self.state_mutex:
-            if self.last_compute_time < self.last_tf_time:
+            if isinstance(self.controller, MPPI):
+                # MPPI re-samples/re-optimizes from scratch every call (no fixed-horizon
+                # command queue to step through), so always recompute on the latest state.
+                command_vector = self.controller.compute_command_vector(self.state)
+                self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
+            elif self.last_compute_time < self.last_tf_time:
                 command_vector = self.controller.compute_command_vector(self.state)
                 self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
             elif self.last_compute_time > 0.0:
@@ -226,10 +241,19 @@ class ControllerNode(Node):
         optim_path_msg.header.frame_id = self.map_frame
         optim_path_msg.poses = []
 
-        for k in range(0, self.controller.horizon_length):
-            pose = self.planar_state_to_pose_msg(self.controller.optim_trajectory_array[:, k])
-            pose.pose.position.z = 0.1
-            optim_path_msg.poses.append(pose)
+        if isinstance(self.controller, MPPI):
+            # optim_trajectory: [horizon_length, 3] ([x, y, yaw] per row)
+            optim_trajectory = np.asarray(self.controller.optim_trajectory)
+            for k in range(0, self.controller.horizon_length):
+                pose = self.planar_state_to_pose_msg(optim_trajectory[k, :])
+                pose.pose.position.z = 0.1
+                optim_path_msg.poses.append(pose)
+        else:
+            # optim_trajectory_array: [3, horizon_length] ([x, y, yaw] per column)
+            for k in range(0, self.controller.horizon_length):
+                pose = self.planar_state_to_pose_msg(self.controller.optim_trajectory_array[:, k])
+                pose.pose.position.z = 0.1
+                optim_path_msg.poses.append(pose)
 
         self.optimal_path_pub.publish(optim_path_msg)
 
@@ -240,12 +264,57 @@ class ControllerNode(Node):
         target_path_msg.header.frame_id = self.map_frame
         target_path_msg.poses = []
 
-        for k in range(0, self.controller.horizon_length):
-            pose = self.planar_state_to_pose_msg(self.controller.target_trajectory[:, k])
-            pose.pose.position.z = 0.05
-            target_path_msg.poses.append(pose)
+        if isinstance(self.controller, MPPI):
+            # target_trajectory: [horizon_length, 3] ([x, y, yaw] per row)
+            target_trajectory = np.asarray(self.controller.target_trajectory)
+            for k in range(0, self.controller.horizon_length):
+                pose = self.planar_state_to_pose_msg(target_trajectory[k, :])
+                pose.pose.position.z = 0.05
+                target_path_msg.poses.append(pose)
+        else:
+            # target_trajectory: [3, horizon_length] ([x, y, yaw] per column)
+            for k in range(0, self.controller.horizon_length):
+                pose = self.planar_state_to_pose_msg(self.controller.target_trajectory[:, k])
+                pose.pose.position.z = 0.05
+                target_path_msg.poses.append(pose)
 
         self.target_path_pub.publish(target_path_msg)
+
+    def publish_sampled_trajectories(self):
+        # Mirrors the gray sampled-rollout cloud drawn in mppi.py's own debug plot.
+        if not isinstance(self.controller, MPPI):
+            return
+
+        sampled_states = np.asarray(self.controller.sampled_states)  # [n_samples, horizon_length, 3]
+        n_samples = sampled_states.shape[0]
+        n_to_plot = max(1, int(n_samples * self.sampled_trajectories_plot_fraction))
+        plot_idx = np.random.choice(n_samples, n_to_plot, replace=False)
+
+        marker = Marker()
+        marker.header.stamp = self.get_clock().now().to_msg()
+        marker.header.frame_id = self.map_frame
+        marker.ns = "sampled_trajectories"
+        marker.id = 0
+        marker.type = Marker.LINE_LIST
+        marker.action = Marker.ADD
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = 0.01
+        marker.color.r = 0.5
+        marker.color.g = 0.5
+        marker.color.b = 0.5
+        marker.color.a = 0.2
+
+        points = []
+        for idx in plot_idx:
+            trajectory = sampled_states[idx]  # [horizon_length, 3]
+            for k in range(trajectory.shape[0] - 1):
+                points.append(Point(x=float(trajectory[k, 0]), y=float(trajectory[k, 1]), z=0.0))
+                points.append(Point(x=float(trajectory[k + 1, 0]), y=float(trajectory[k + 1, 1]), z=0.0))
+        marker.points = points
+
+        marker_array_msg = MarkerArray()
+        marker_array_msg.markers.append(marker)
+        self.sampled_trajectories_pub.publish(marker_array_msg)
 
     def publish_reference_path(self):
 
@@ -270,7 +339,7 @@ class ControllerNode(Node):
         pose_msg = PoseStamped()
         pose_msg.header.frame_id = self.map_frame
         pose_msg.header.stamp = self.get_clock().now().to_msg()
-        pose_msg.pose.position = Point(x=planar_state[0], y=planar_state[1], z=0.0)
+        pose_msg.pose.position = Point(x=float(planar_state[0]), y=float(planar_state[1]), z=0.0)
         x, y, z, w = R.from_euler("xyz", [0.0, 0.0, planar_state[2]]).as_quat()  # type: ignore
         pose_msg.pose.orientation = Quaternion(x=x, y=y, z=z, w=w)
         return pose_msg
@@ -292,21 +361,32 @@ class ControllerNode(Node):
         self.target_path_pub.publish(empty_path_msg)
         self.optimal_path_pub.publish(empty_path_msg)
 
+        delete_all_marker = Marker()
+        delete_all_marker.ns = "sampled_trajectories"
+        delete_all_marker.id = 0
+        delete_all_marker.action = Marker.DELETEALL
+        self.sampled_trajectories_pub.publish(MarkerArray(markers=[delete_all_marker]))
+
     def print_debug(self):
 
-        self.get_logger().debug(
-            f"Next command : (Left) {self.controller.optimal_left}, (Right) {self.controller.optimal_right}"
-        )
         self.get_logger().debug(f"Planar state : {self.controller.planar_state}")
-        self.get_logger().debug(f"Target path: {self.controller.target_trajectory.T}")
-        for j in range(0, self.controller.horizon_length):
-            self.get_logger().debug(f"optimal_left_{j} {self.controller.optim_solution_array[j]}")
-            self.get_logger().debug(
-                f"optimal_right_{j} {self.controller.optim_solution_array[j + self.controller.horizon_length]}"
-            )
         self.get_logger().debug(f"Linear distance to goal: {self.controller.linear_distance_to_goal}")
         self.get_logger().debug(f"Angular distance to goal: {self.controller.angular_distance_to_goal}")
-        self.get_logger().debug(f"Debug indicator: {str(self.controller.debug_indicator)}")
+
+        if isinstance(self.controller, MPPI):
+            self.get_logger().debug(f"Next command (wheel vel, left/right): {self.controller.a_opt[0]}")
+            self.get_logger().debug(f"Target trajectory: {self.controller.target_trajectory}")
+        else:
+            self.get_logger().debug(
+                f"Next command : (Left) {self.controller.optimal_left}, (Right) {self.controller.optimal_right}"
+            )
+            self.get_logger().debug(f"Target path: {self.controller.target_trajectory.T}")
+            for j in range(0, self.controller.horizon_length):
+                self.get_logger().debug(f"optimal_left_{j} {self.controller.optim_solution_array[j]}")
+                self.get_logger().debug(
+                    f"optimal_right_{j} {self.controller.optim_solution_array[j + self.controller.horizon_length]}"
+                )
+            self.get_logger().debug(f"Debug indicator: {str(self.controller.debug_indicator)}")
 
 
 def main(args=None):
