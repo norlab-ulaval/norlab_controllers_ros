@@ -89,6 +89,8 @@ class ControllerNode(Node):
                 self.controller.__dict__[param.name] = param.value
                 if hasattr(self.controller, "init_casadi_model"):
                     self.controller.init_casadi_model()
+                if hasattr(self.controller, "reinit_model"):
+                    self.controller.reinit_model()
 
                 self.get_logger().info(
                     f"The param [{param.name}] has been set to {self.controller.__dict__[param.name]}"
