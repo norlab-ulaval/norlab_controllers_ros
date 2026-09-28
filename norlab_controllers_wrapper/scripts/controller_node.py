@@ -131,10 +131,10 @@ class ControllerNode(Node):
             tf = self.tf_buffer.lookup_transform(self.map_frame, self.robot_frame, rclpy.time.Time())
             position = tf.transform.translation
             quat = tf.transform.rotation
-            self.state[0:3] = [position.x, position.y, position.z]
-            self.state[3:] = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler("xyz")
-
-            self.last_tf_time = tf.header.stamp.sec + tf.header.stamp.nanosec * 1e-9
+            with self.state_mutex:  # not while a command is computed from the pose
+                self.state[0:3] = [position.x, position.y, position.z]
+                self.state[3:] = R.from_quat([quat.x, quat.y, quat.z, quat.w]).as_euler("xyz")
+                self.last_tf_time = tf.header.stamp.sec + tf.header.stamp.nanosec * 1e-9
             if self.get_clock().now().nanoseconds * 1e-9 - self.last_tf_time > 1.0:
                 self.get_logger().warn("The last TF message is older than 1 second!")
 
@@ -217,7 +217,7 @@ class ControllerNode(Node):
         with self.state_mutex:
             if self.last_compute_time < self.last_tf_time:
                 command_vector = self.controller.compute_command_vector(self.state)
-                self.last_compute_time = self.get_clock().now().nanoseconds * 1e-9
+                self.last_compute_time = self.last_tf_time  # the stamp of the pose used, not the time now
             elif self.last_compute_time > 0.0:
                 command_vector, id = self.controller.get_next_command()
             else:
