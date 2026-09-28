@@ -43,9 +43,13 @@ class ControllerNode(Node):
         self.cmd_vel_msg = Twist()
         self.current_velocity = Twist()
 
+        self.active_goal = None
+        self.goal_mutex = Lock()
+
         # Initialize action server
         self._action_server = ActionServer(
-            self, FollowPath, self.follow_path_topic, self.follow_path_callback, cancel_callback=self.cancel_callback
+            self, FollowPath, self.follow_path_topic, self.follow_path_callback,
+            handle_accepted_callback=self.accept_goal, cancel_callback=self.cancel_callback
         )
 
         self.rate = self.create_rate(self.controller.rate)
@@ -142,7 +146,19 @@ class ControllerNode(Node):
             self.get_logger().log(f"Failed to get transform: {e}", rclpy.logging.LoggingSeverity.WARN, throttle_duration_sec=1.0)
 
 
+    def accept_goal(self, goal_handle):
+
+        self.active_goal = goal_handle
+        goal_handle.execute()
+
+
     def follow_path_callback(self, goal_handle):
+
+        with self.goal_mutex:
+            return self.follow_path(goal_handle)
+
+
+    def follow_path(self, goal_handle):
 
         self.get_logger().info("Received path to follow.")
 
@@ -173,7 +189,12 @@ class ControllerNode(Node):
                 self.stop_robot()
                 self.clear_paths()
                 return FollowPath.Result()
-            
+
+            if goal_handle is not self.active_goal:
+                self.get_logger().info("Path replaced by a new one.")
+                goal_handle.abort()
+                return FollowPath.Result()
+
             command_vector = self.compute_next_command()
             self.publish_command(command_vector)
             self.publish_optimal_path()
